@@ -1,0 +1,229 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Base de artistas contemporáneos</title>
+<style>
+  :root{
+    --bg:#ffffff; --ink:#1a1a1a; --soft:#6b6b6b; --line:#e4e4e0; --alt:#f7f7f5;
+    --accent:#1f4e79; --accent-soft:#eaf1f8; --chip:#f1f1ee;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;background:var(--bg);color:var(--ink);
+    font:14px/1.45 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif}
+  header{padding:28px 24px 16px;border-bottom:1px solid var(--line)}
+  h1{margin:0 0 4px;font-size:22px;font-weight:600;letter-spacing:-.01em}
+  header p{margin:0;color:var(--soft);font-size:13px}
+  .controls{display:flex;flex-wrap:wrap;gap:8px;align-items:center;padding:14px 24px;
+    border-bottom:1px solid var(--line);position:sticky;top:0;background:var(--bg);z-index:5}
+  input[type=search],select{font:inherit;padding:7px 10px;border:1px solid var(--line);border-radius:6px;background:#fff;color:var(--ink)}
+  input[type=search]{flex:1 1 240px;min-width:180px}
+  button{font:inherit;padding:7px 12px;border:1px solid var(--line);border-radius:6px;background:#fff;cursor:pointer}
+  button:hover{background:var(--alt)}
+  #contador{color:var(--soft);font-size:13px;margin-left:auto;white-space:nowrap}
+  .wrap{overflow-x:auto}
+  table{width:100%;border-collapse:collapse}
+  th,td{text-align:left;padding:9px 12px;border-bottom:1px solid var(--line);vertical-align:top}
+  th{font-size:11px;text-transform:uppercase;letter-spacing:.05em;color:var(--soft);font-weight:600;
+    cursor:pointer;user-select:none;white-space:nowrap;background:var(--bg)}
+  th[aria-sort=ascending]::after{content:" ↑"} th[aria-sort=descending]::after{content:" ↓"}
+  tbody tr.fila{cursor:pointer} tbody tr.fila:hover{background:var(--alt)}
+  td.n{font-variant-numeric:tabular-nums;width:1%;white-space:nowrap}
+  .barra{display:inline-flex;gap:2px;vertical-align:middle;margin-left:6px}
+  .barra i{width:6px;height:10px;border-radius:1px;background:var(--line)}
+  .barra i.on{background:var(--accent)}
+  .nombre{font-weight:600}
+  .chip{display:inline-block;padding:1px 7px;margin:1px 3px 1px 0;border-radius:10px;font-size:12px;
+    background:var(--chip);color:#333;white-space:nowrap}
+  .chip.tipo{background:var(--accent-soft);color:var(--accent)}
+  tr.detalle td{background:var(--alt);padding:12px 24px}
+  dl{display:grid;grid-template-columns:170px 1fr;gap:4px 16px;margin:0;max-width:900px}
+  dt{color:var(--soft);font-size:12px} dd{margin:0}
+  #aviso{padding:40px 24px;color:var(--soft);display:none}
+  #aviso.on{display:block}
+  footer{padding:18px 24px;color:var(--soft);font-size:12px;border-top:1px solid var(--line)}
+  @media (max-width:700px){
+    header,.controls{padding-left:16px;padding-right:16px}
+    .opc{display:none} dl{grid-template-columns:1fr} dt{margin-top:6px}
+  }
+</style>
+</head>
+<body>
+<header>
+  <h1>Base de artistas contemporáneos</h1>
+  <p id="sub">Cargando datos…</p>
+</header>
+
+<div class="controls">
+  <input type="search" id="q" placeholder="Buscar artista, obra, tomo…" autocomplete="off">
+  <select id="f-fuente"><option value="">Todas las fuentes</option></select>
+  <select id="f-tipo"><option value="">Todos los dispositivos</option></select>
+  <select id="f-min">
+    <option value="1">1 fuente o más</option><option value="2">2 o más</option>
+    <option value="3">3 o más</option><option value="4">4 o más</option>
+  </select>
+  <button id="b-limpiar" type="button">Limpiar</button>
+  <button id="b-csv" type="button" title="Descargar la vista filtrada">Descargar vista</button>
+  <button id="b-cargar" type="button" title="Abrir otra versión del CSV">Abrir CSV…</button>
+  <input type="file" id="archivo" accept=".csv,text/csv" hidden>
+  <span id="contador"></span>
+</div>
+
+<div class="wrap">
+  <table>
+    <thead><tr>
+      <th data-k="artista">Artista</th>
+      <th data-k="n_fuentes">Fuentes</th>
+      <th data-k="fuentes" class="opc">Dónde aparece</th>
+      <th data-k="tipos_de_dispositivo" class="opc">Tipo de dispositivo</th>
+    </tr></thead>
+    <tbody id="tb"></tbody>
+  </table>
+</div>
+<div id="aviso"></div>
+
+<footer>
+  Haz clic en una fila para ver el detalle por fuente. Datos: <a href="artistas.csv">artistas.csv</a>.
+</footer>
+
+<script>
+const CSV_URL = 'artistas.csv';
+const DETALLE = [
+  ['vitamin','Vitamin (Phaidon)'], ['cream','Cream (Phaidon)'],
+  ['artnews_100','ARTnews · 100 obras del s. XXI'], ['frieze_25','Frieze · 25 obras'],
+  ['nyt_25','NYT T Magazine · 25 obras'], ['turner','Turner Prize'],
+  ['hugo_boss','Hugo Boss Prize'], ['duchamp','Prix Marcel Duchamp'],
+  ['latam','Latin American Artists (Phaidon)']
+];
+let datos = [], vista = [], orden = {k:'n_fuentes', dir:-1}, abierta = null;
+const $ = s => document.querySelector(s);
+
+// Lector CSV (RFC 4180: comillas, comas y saltos de línea dentro de campos)
+function parseCSV(txt){
+  txt = txt.replace(/^﻿/, '');
+  const filas = []; let fila = [], campo = '', q = false;
+  for (let i = 0; i < txt.length; i++){
+    const c = txt[i];
+    if (q){
+      if (c === '"'){ if (txt[i+1] === '"'){ campo += '"'; i++; } else q = false; }
+      else campo += c;
+    } else if (c === '"') q = true;
+    else if (c === ','){ fila.push(campo); campo = ''; }
+    else if (c === '\n' || c === '\r'){
+      if (c === '\r' && txt[i+1] === '\n') i++;
+      fila.push(campo); campo = '';
+      if (fila.some(v => v !== '')) filas.push(fila);
+      fila = [];
+    } else campo += c;
+  }
+  if (campo !== '' || fila.length){ fila.push(campo); if (fila.some(v => v !== '')) filas.push(fila); }
+  const cab = filas.shift().map(h => h.trim());
+  return filas.map(f => Object.fromEntries(cab.map((h, i) => [h, (f[i] || '').trim()])));
+}
+const partes = s => s ? s.split(' | ').map(x => x.trim()).filter(Boolean) : [];
+const norm = s => s.normalize('NFD').replace(/[̀-ͯ]/g,'').toLowerCase();
+const esc = s => s.replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+
+function cargar(registros, origen){
+  datos = registros.map(r => ({...r, n_fuentes: +r.n_fuentes || 0,
+    _txt: norm(Object.values(r).join(' '))}));
+  const fuentes = new Set(), tipos = new Set();
+  datos.forEach(r => { partes(r.fuentes).forEach(x => fuentes.add(x)); partes(r.tipos_de_dispositivo).forEach(x => tipos.add(x)); });
+  llenar('#f-fuente', 'Todas las fuentes', fuentes);
+  llenar('#f-tipo', 'Todos los dispositivos', tipos);
+  $('#sub').textContent = `${datos.length.toLocaleString('es')} artistas · ${fuentes.size} fuentes · ${origen}`;
+  $('#aviso').classList.remove('on');
+  aplicar();
+}
+function llenar(sel, primero, set){
+  const el = $(sel);
+  el.innerHTML = `<option value="">${primero}</option>` +
+    [...set].sort((a,b)=>a.localeCompare(b,'es')).map(v => `<option>${esc(v)}</option>`).join('');
+}
+
+function aplicar(){
+  const q = norm($('#q').value.trim()), ff = $('#f-fuente').value, ft = $('#f-tipo').value, mn = +$('#f-min').value;
+  vista = datos.filter(r =>
+    r.n_fuentes >= mn &&
+    (!ff || partes(r.fuentes).includes(ff)) &&
+    (!ft || partes(r.tipos_de_dispositivo).includes(ft)) &&
+    (!q || q.split(/\s+/).every(t => r._txt.includes(t))));
+  const {k, dir} = orden;
+  vista.sort((a,b) => {
+    const va = a[k], vb = b[k];
+    const c = typeof va === 'number' ? va - vb : String(va).localeCompare(String(vb), 'es', {sensitivity:'base'});
+    return c * dir || a.artista.localeCompare(b.artista, 'es');
+  });
+  document.querySelectorAll('th').forEach(th =>
+    th.setAttribute('aria-sort', th.dataset.k === k ? (dir > 0 ? 'ascending' : 'descending') : 'none'));
+  abierta = null;
+  pintar();
+}
+
+function pintar(){
+  const max = Math.max(5, ...datos.map(r => r.n_fuentes));
+  $('#tb').innerHTML = vista.map((r, i) => `
+    <tr class="fila" data-i="${i}">
+      <td class="nombre">${esc(r.artista)}</td>
+      <td class="n">${r.n_fuentes}<span class="barra" aria-hidden="true">${
+        Array.from({length:max}, (_, j) => `<i class="${j < r.n_fuentes ? 'on' : ''}"></i>`).join('')}</span></td>
+      <td class="opc">${partes(r.fuentes).map(x => `<span class="chip">${esc(x)}</span>`).join('')}</td>
+      <td class="opc">${partes(r.tipos_de_dispositivo).map(x => `<span class="chip tipo">${esc(x)}</span>`).join('')}</td>
+    </tr>`).join('');
+  $('#contador').textContent = `${vista.length.toLocaleString('es')} de ${datos.length.toLocaleString('es')}`;
+  const av = $('#aviso');
+  if (datos.length && !vista.length){ av.textContent = 'Ningún artista coincide con estos filtros.'; av.classList.add('on'); }
+  else if (datos.length) av.classList.remove('on');
+}
+
+$('#tb').addEventListener('click', e => {
+  const tr = e.target.closest('tr.fila'); if (!tr) return;
+  document.querySelectorAll('tr.detalle').forEach(d => d.remove());
+  const i = +tr.dataset.i;
+  if (abierta === i){ abierta = null; return; }
+  abierta = i;
+  const r = vista[i];
+  const filas = DETALLE.filter(([k]) => r[k]).map(([k, et]) =>
+    `<dt>${et}</dt><dd>${partes(r[k]).map(esc).join('<br>')}</dd>`).join('');
+  tr.insertAdjacentHTML('afterend',
+    `<tr class="detalle"><td colspan="4"><dl>${filas || '<dt>Sin detalle</dt><dd></dd>'}</dl></td></tr>`);
+});
+
+document.querySelectorAll('th').forEach(th => th.addEventListener('click', () => {
+  const k = th.dataset.k;
+  orden = orden.k === k ? {k, dir: -orden.dir} : {k, dir: k === 'n_fuentes' ? -1 : 1};
+  aplicar();
+}));
+['#q','#f-fuente','#f-tipo','#f-min'].forEach(s => $(s).addEventListener('input', aplicar));
+$('#b-limpiar').addEventListener('click', () => {
+  $('#q').value = ''; $('#f-fuente').value = ''; $('#f-tipo').value = ''; $('#f-min').value = '1'; aplicar();
+});
+$('#b-cargar').addEventListener('click', () => $('#archivo').click());
+$('#archivo').addEventListener('change', e => {
+  const f = e.target.files[0]; if (!f) return;
+  f.text().then(t => cargar(parseCSV(t), f.name));
+});
+$('#b-csv').addEventListener('click', () => {
+  if (!vista.length) return;
+  const cols = Object.keys(vista[0]).filter(c => !c.startsWith('_'));
+  const q = v => /[",\n]/.test(String(v)) ? `"${String(v).replace(/"/g,'""')}"` : v;
+  const txt = '﻿' + [cols.join(','), ...vista.map(r => cols.map(c => q(r[c])).join(','))].join('\n');
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([txt], {type:'text/csv;charset=utf-8'}));
+  a.download = 'artistas_filtrado.csv'; a.click(); URL.revokeObjectURL(a.href);
+});
+
+fetch(CSV_URL)
+  .then(r => { if (!r.ok) throw new Error(r.status); return r.text(); })
+  .then(t => cargar(parseCSV(t), CSV_URL))
+  .catch(() => {
+    $('#sub').textContent = 'No se pudo leer artistas.csv';
+    const av = $('#aviso');
+    av.innerHTML = 'Si abriste este archivo directamente desde tu computadora, el navegador bloquea la lectura del CSV. ' +
+      'Usa <strong>Abrir CSV…</strong> para cargarlo a mano; en GitHub Pages se carga solo.';
+    av.classList.add('on');
+  });
+</script>
+</body>
+</html>
