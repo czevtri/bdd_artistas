@@ -1,0 +1,385 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Red de artistas contemporáneos</title>
+<style>
+  :root{
+    --bg:#ffffff; --ink:#1a1a1a; --soft:#6b6b6b; --line:#e4e4e0; --alt:#f7f7f5;
+    --accent:#1f4e79; --panel:rgba(255,255,255,.96);
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;height:100%;background:var(--bg);color:var(--ink);overflow:hidden;
+    font:14px/1.45 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif}
+  canvas{display:block;width:100vw;height:100vh;height:100dvh;cursor:grab;touch-action:none}
+  canvas.arrastrando{cursor:grabbing}
+  .panel{position:absolute;background:var(--panel);border:1px solid var(--line);border-radius:10px;
+    box-shadow:0 2px 12px rgba(0,0,0,.06);padding:14px 16px}
+  #control{top:16px;left:16px;width:290px;max-height:calc(100% - 32px);overflow:auto}
+  #detalle{top:16px;right:16px;width:320px;max-height:calc(100% - 32px);overflow:auto;display:none}
+  h1{font-size:17px;margin:0 0 2px;font-weight:600;letter-spacing:-.01em}
+  .sub{color:var(--soft);font-size:12px;margin:0 0 12px}
+  a{color:var(--accent)}
+  .volver{display:inline-block;font-size:13px;text-decoration:none;margin-bottom:10px}
+  h2{font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--soft);margin:14px 0 6px;font-weight:600}
+  input[type=search],select{font:inherit;width:100%;padding:7px 10px;border:1px solid var(--line);border-radius:6px;background:#fff;color:var(--ink)}
+  label.cat{display:flex;align-items:center;gap:8px;padding:3px 0;cursor:pointer;user-select:none}
+  label.cat .punto{width:11px;height:11px;border-radius:50%;flex:none}
+  label.cat .n{margin-left:auto;color:var(--soft);font-size:12px;font-variant-numeric:tabular-nums}
+  label.opcion{display:flex;gap:8px;align-items:center;font-size:13px;padding:3px 0;cursor:pointer}
+  .fila{display:flex;align-items:center;gap:8px;font-size:13px}
+  .fila input[type=range]{flex:1}
+  .ayuda{color:var(--soft);font-size:12px;margin-top:12px;line-height:1.4}
+  button{font:inherit;padding:6px 10px;border:1px solid var(--line);border-radius:6px;background:#fff;cursor:pointer}
+  button:hover{background:var(--alt)}
+  #detalle h3{font-size:16px;margin:0 0 2px}
+  #detalle .tipo{font-size:12px;color:var(--soft);margin-bottom:10px}
+  #detalle dl{display:grid;grid-template-columns:90px 1fr;gap:4px 10px;margin:0 0 10px;font-size:13px}
+  #detalle dt{color:var(--soft)} #detalle dd{margin:0}
+  #detalle ul{list-style:none;padding:0;margin:0;font-size:13px;columns:1}
+  #detalle li{padding:2px 0}
+  #detalle li a{text-decoration:none;cursor:pointer}
+  #detalle li a:hover{text-decoration:underline}
+  #detalle .n{color:var(--soft);font-size:12px}
+  .cerrar{position:absolute;top:8px;right:8px;border:none;background:none;font-size:18px;line-height:1;color:var(--soft);padding:4px 8px}
+  #tip{position:absolute;pointer-events:none;background:#1a1a1a;color:#fff;font-size:12px;padding:4px 8px;border-radius:4px;display:none;white-space:nowrap}
+  #cargando{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:var(--soft);pointer-events:none}
+  #toggle{display:none;position:absolute;top:12px;left:12px;z-index:3}
+  @media (max-width:700px){
+    #toggle{display:block}
+    #control{top:52px;left:12px;right:12px;width:auto;max-height:60%;display:none}
+    #control.abierto{display:block}
+    #detalle{top:auto;bottom:12px;left:12px;right:12px;width:auto;max-height:45%}
+  }
+</style>
+</head>
+<body>
+<canvas id="lienzo"></canvas>
+<div id="cargando">Cargando datos…</div>
+<div id="tip"></div>
+<button id="toggle" type="button">Controles</button>
+
+<div id="control" class="panel">
+  <a class="volver" href="index.html">← Volver a la tabla</a>
+  <h1>Red de artistas</h1>
+  <p class="sub" id="sub"></p>
+
+  <input type="search" id="buscar" list="nombres" placeholder="Buscar artista, país, tema…" autocomplete="off">
+  <datalist id="nombres"></datalist>
+
+  <h2>Nodos que agrupan</h2>
+  <div id="cats"></div>
+
+  <h2>Filtros</h2>
+  <div class="fila"><span>Agrupar solo si reúne</span><input type="range" id="umbral" min="1" max="20" value="3"><span id="umbral-v">3</span></div>
+  <div class="fila" style="margin-top:6px"><span>Artistas en</span>
+    <select id="minfuentes" style="width:auto">
+      <option value="1">1 fuente o más</option><option value="2">2 o más</option><option value="3">3 o más</option>
+    </select>
+  </div>
+  <label class="opcion"><input type="checkbox" id="aislados" checked> Ocultar artistas sin conexión</label>
+  <label class="opcion"><input type="checkbox" id="etiquetas"> Mostrar nombres de artistas</label>
+
+  <div style="display:flex;gap:6px;margin-top:10px">
+    <button id="reacomodar" type="button">Reacomodar</button>
+    <button id="centrar" type="button">Centrar</button>
+  </div>
+
+  <p class="ayuda">Arrastra para moverte y usa la rueda o los dedos para acercarte. Pasa sobre un nodo para ver su nombre; haz clic para ver sus conexiones. Los puntos grises son artistas; los de color, las categorías que los agrupan.</p>
+</div>
+
+<div id="detalle" class="panel">
+  <button class="cerrar" id="cerrar" type="button" aria-label="Cerrar">×</button>
+  <div id="detalle-c"></div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/d3@7.9.0/dist/d3.min.js"></script>
+<script>
+const CSV_URL = 'artistas.csv';
+const CATS = [
+  {k:'tema',        nombre:'Tema',                    color:'#b5523b', on:true,
+    val: r => lista(r.temas, ',')},
+  {k:'medio',       nombre:'Medio',                   color:'#2f6f8f', on:true,
+    val: r => lista(r.medios, ',')},
+  {k:'pais',        nombre:'País de nacimiento',      color:'#4f7a3a', on:false,
+    val: r => r.pais_nacimiento ? [r.pais_nacimiento] : []},
+  {k:'decada',      nombre:'Década de nacimiento',    color:'#8a6d3b', on:false,
+    val: r => /^\d{4}$/.test(r.nacimiento) ? [Math.floor(+r.nacimiento/10)*10 + 's'] : []},
+  {k:'fuente',      nombre:'Fuente',                  color:'#7b5aa6', on:false,
+    val: r => lista(r.fuentes, ' | ')},
+  {k:'dispositivo', nombre:'Tipo de dispositivo',     color:'#b08420', on:false,
+    val: r => lista(r.tipos_de_dispositivo, ' | ')},
+];
+const COLOR_ARTISTA = '#8f8f8a';
+const CAT = Object.fromEntries(CATS.map(c => [c.k, c]));
+const lista = (s, sep) => s ? s.split(sep).map(x => x.trim()).filter(Boolean) : [];
+const norm = s => s.normalize('NFD').replace(/[̀-ͯ]/g,'').toLowerCase();
+const esc = s => String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const $ = s => document.querySelector(s);
+
+function parseCSV(txt){
+  txt = txt.replace(/^﻿/, '');
+  const filas = []; let fila = [], campo = '', q = false;
+  for (let i = 0; i < txt.length; i++){
+    const c = txt[i];
+    if (q){
+      if (c === '"'){ if (txt[i+1] === '"'){ campo += '"'; i++; } else q = false; }
+      else campo += c;
+    } else if (c === '"') q = true;
+    else if (c === ','){ fila.push(campo); campo = ''; }
+    else if (c === '\n' || c === '\r'){
+      if (c === '\r' && txt[i+1] === '\n') i++;
+      fila.push(campo); campo = '';
+      if (fila.some(v => v !== '')) filas.push(fila);
+      fila = [];
+    } else campo += c;
+  }
+  if (campo !== '' || fila.length){ fila.push(campo); if (fila.some(v => v !== '')) filas.push(fila); }
+  const cab = filas.shift().map(h => h.trim());
+  return filas.map(f => Object.fromEntries(cab.map((h, i) => [h, (f[i] || '').trim()])));
+}
+
+// ---------- estado ----------
+let artistas = [], hubs = new Map(), todosLinks = [];
+let nodos = [], links = [], vecinos = new Map();
+let sim, transform = d3.zoomIdentity, seleccionado = null, hover = null;
+const canvas = $('#lienzo'), ctx = canvas.getContext('2d');
+let W = 0, H = 0, DPR = 1;
+
+function construir(rows){
+  artistas = rows.map((r, i) => ({id:'a'+i, tipo:'artista', nombre:r.artista, r, nf: +r.n_fuentes || 1}));
+  hubs = new Map(); todosLinks = [];
+  for (const a of artistas){
+    for (const c of CATS){
+      for (const v of c.val(a.r)){
+        const id = c.k + ':' + v;
+        if (!hubs.has(id)) hubs.set(id, {id, tipo:c.k, nombre:v, total:0});
+        hubs.get(id).total++;
+        todosLinks.push({s:a, t:hubs.get(id), cat:c.k});
+      }
+    }
+  }
+  // posiciones iniciales en espiral para que arranque ordenado
+  const todos = [...artistas, ...hubs.values()];
+  todos.forEach((n, i) => { const a = i * 2.39996, r = 8 * Math.sqrt(i); n.x = Math.cos(a)*r; n.y = Math.sin(a)*r; });
+  // conteos en los controles
+  const cont = Object.fromEntries(CATS.map(c => [c.k, 0]));
+  hubs.forEach(h => cont[h.tipo]++);
+  $('#cats').innerHTML = CATS.map(c => `
+    <label class="cat"><input type="checkbox" data-k="${c.k}" ${c.on ? 'checked' : ''}>
+      <span class="punto" style="background:${c.color}"></span>${c.nombre}
+      <span class="n">${cont[c.k]}</span></label>`).join('');
+  $('#cats').addEventListener('change', e => { const c = CAT[e.target.dataset.k]; if (c){ c.on = e.target.checked; actualizar(true); } });
+  $('#nombres').innerHTML = [...artistas.map(a => a.nombre), ...[...hubs.values()].map(h => h.nombre)]
+    .filter((v, i, arr) => arr.indexOf(v) === i).map(v => `<option value="${esc(v)}">`).join('');
+  $('#sub').textContent = `${artistas.length.toLocaleString('es')} artistas · ${hubs.size} categorías`;
+}
+
+function actualizar(recalentar){
+  const umbral = +$('#umbral').value, minf = +$('#minfuentes').value, aislar = $('#aislados').checked;
+  const artOk = new Set(artistas.filter(a => a.nf >= minf));
+  // grado de cada hub considerando solo artistas visibles
+  const grado = new Map();
+  for (const l of todosLinks){
+    if (!CAT[l.cat].on || !artOk.has(l.s)) continue;
+    grado.set(l.t, (grado.get(l.t) || 0) + 1);
+  }
+  const hubOk = new Set([...grado].filter(([h, g]) => g >= umbral).map(([h]) => h));
+  links = todosLinks.filter(l => artOk.has(l.s) && hubOk.has(l.t)).map(l => ({source:l.s, target:l.t, cat:l.cat}));
+  const conectados = new Set(links.map(l => l.source));
+  const artVis = [...artOk].filter(a => !aislar || conectados.has(a));
+  hubOk.forEach(h => h.grado = grado.get(h));
+  nodos = [...artVis, ...hubOk];
+  vecinos = new Map(nodos.map(n => [n, new Set()]));
+  for (const l of links){ vecinos.get(l.source).add(l.target); vecinos.get(l.target).add(l.source); }
+  nodos.forEach(n => n.rad = n.tipo === 'artista' ? 2.2 + n.nf * 0.9 : 5 + Math.sqrt(n.grado) * 1.7);
+  if (seleccionado && !vecinos.has(seleccionado)) cerrarDetalle();
+
+  sim.nodes(nodos);
+  sim.force('link').links(links);
+  sim.alpha(recalentar ? 0.6 : 0.3).restart();
+}
+
+function iniciarSim(){
+  sim = d3.forceSimulation()
+    .force('link', d3.forceLink().id(d => d.id).distance(l => 18 + l.target.rad * 1.5))
+    .force('charge', d3.forceManyBody().strength(d => d.tipo === 'artista' ? -14 : -60 - d.rad * 6).distanceMax(600))
+    .force('collide', d3.forceCollide(d => d.rad + 1.2).iterations(1))
+    .force('x', d3.forceX(0).strength(0.02))
+    .force('y', d3.forceY(0).strength(0.02))
+    .alphaDecay(0.025)
+    .on('tick', dibujar);
+}
+
+// ---------- dibujo ----------
+function redimensionar(){
+  DPR = window.devicePixelRatio || 1;
+  W = window.innerWidth; H = window.innerHeight;
+  canvas.width = W * DPR; canvas.height = H * DPR;
+  dibujar();
+}
+function colorDe(n){ return n.tipo === 'artista' ? COLOR_ARTISTA : CAT[n.tipo].color; }
+
+function dibujar(){
+  ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+  ctx.clearRect(0, 0, W, H);
+  ctx.translate(W/2 + transform.x, H/2 + transform.y);
+  ctx.scale(transform.k, transform.k);
+  const foco = seleccionado || hover;
+  const vec = foco ? vecinos.get(foco) : null;
+
+  // enlaces
+  ctx.lineWidth = 0.6 / transform.k;
+  for (const c of CATS){
+    if (!c.on) continue;
+    ctx.strokeStyle = c.color; ctx.globalAlpha = foco ? 0.03 : 0.09;
+    ctx.beginPath();
+    for (const l of links){ if (l.cat !== c.k) continue; ctx.moveTo(l.source.x, l.source.y); ctx.lineTo(l.target.x, l.target.y); }
+    ctx.stroke();
+  }
+  if (foco){
+    ctx.globalAlpha = 0.75; ctx.lineWidth = 1.2 / transform.k;
+    for (const l of links){
+      if (l.source !== foco && l.target !== foco) continue;
+      ctx.strokeStyle = CAT[l.cat].color;
+      ctx.beginPath(); ctx.moveTo(l.source.x, l.source.y); ctx.lineTo(l.target.x, l.target.y); ctx.stroke();
+    }
+  }
+  // nodos: primero artistas, luego categorías encima
+  for (const pase of ['artista', 'hub']){
+    for (const n of nodos){
+      if ((n.tipo === 'artista') !== (pase === 'artista')) continue;
+      const activo = !foco || n === foco || vec.has(n);
+      ctx.globalAlpha = activo ? 1 : 0.15;
+      ctx.fillStyle = colorDe(n);
+      ctx.beginPath(); ctx.arc(n.x, n.y, n.rad, 0, Math.PI*2); ctx.fill();
+      if (n === foco){ ctx.lineWidth = 2 / transform.k; ctx.strokeStyle = '#1a1a1a'; ctx.stroke(); }
+    }
+  }
+  // etiquetas
+  ctx.globalAlpha = 1;
+  ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  ctx.lineJoin = 'round';
+  const k = transform.k;
+  const mostrarArt = $('#etiquetas').checked;
+  for (const n of nodos){
+    const esHub = n.tipo !== 'artista';
+    let ver = false;
+    if (foco) ver = n === foco || vec.has(n);
+    else if (esHub) ver = n.rad * k > 7;
+    else ver = mostrarArt && k > 1.4;
+    if (!ver) continue;
+    const fs = esHub ? Math.max(11, Math.min(16, 9 + n.rad * 0.35)) : 10.5;
+    ctx.font = `${esHub ? 600 : 400} ${fs / k}px -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif`;
+    const y = esHub ? n.y : n.y - n.rad - 7 / k;
+    ctx.lineWidth = 3 / k; ctx.strokeStyle = 'rgba(255,255,255,.92)';
+    ctx.strokeText(n.nombre, n.x, y);
+    ctx.fillStyle = esHub ? '#1a1a1a' : '#444';
+    ctx.fillText(n.nombre, n.x, y);
+  }
+}
+
+// ---------- interacción ----------
+function nodoEn(px, py){
+  const x = (px - W/2 - transform.x) / transform.k, y = (py - H/2 - transform.y) / transform.k;
+  let mejor = null, dmin = Infinity;
+  for (let i = nodos.length - 1; i >= 0; i--){
+    const n = nodos[i], d = Math.hypot(n.x - x, n.y - y), lim = n.rad + 4 / transform.k;
+    if (d < lim && d < dmin){ dmin = d; mejor = n; }
+  }
+  return mejor;
+}
+const zoom = d3.zoom().scaleExtent([0.08, 12])
+  .on('start', () => canvas.classList.add('arrastrando'))
+  .on('end', () => canvas.classList.remove('arrastrando'))
+  .on('zoom', e => { transform = e.transform; dibujar(); });
+d3.select(canvas).call(zoom).on('dblclick.zoom', null);
+
+canvas.addEventListener('mousemove', e => {
+  const n = nodoEn(e.clientX, e.clientY);
+  if (n !== hover){ hover = n; dibujar(); }
+  const tip = $('#tip');
+  if (n){
+    tip.textContent = n.tipo === 'artista' ? n.nombre : `${n.nombre} · ${n.grado} artistas`;
+    tip.style.display = 'block'; tip.style.left = (e.clientX + 12) + 'px'; tip.style.top = (e.clientY + 12) + 'px';
+    canvas.style.cursor = 'pointer';
+  } else { tip.style.display = 'none'; canvas.style.cursor = ''; }
+});
+canvas.addEventListener('mouseleave', () => { hover = null; $('#tip').style.display = 'none'; dibujar(); });
+canvas.addEventListener('click', e => {
+  const n = nodoEn(e.clientX, e.clientY);
+  if (n) seleccionar(n); else cerrarDetalle();
+});
+
+function seleccionar(n, centrar){
+  seleccionado = n;
+  const d = $('#detalle-c');
+  if (n.tipo === 'artista'){
+    const r = n.r;
+    const fila = (et, v) => v ? `<dt>${et}</dt><dd>${esc(v)}</dd>` : '';
+    const anios = r.nacimiento ? (r.muerte ? `${r.nacimiento}–${r.muerte}` : r.nacimiento) : '';
+    d.innerHTML = `<h3>${esc(n.nombre)}</h3><div class="tipo">Artista · ${n.nf} ${n.nf === 1 ? 'fuente' : 'fuentes'}</div>
+      <dl>${fila('País', r.pais_nacimiento)}${fila('Años', anios)}${fila('Residencia', r.residencia)}
+      ${fila('Medios', r.medios)}${fila('Temas', r.temas)}${fila('Obra', r.obra_conocida)}${fila('Fuentes', r.fuentes)}</dl>
+      <a href="index.html?q=${encodeURIComponent(n.nombre)}">Ver en la tabla →</a>`;
+  } else {
+    const arts = [...vecinos.get(n)].sort((a, b) => b.nf - a.nf || a.nombre.localeCompare(b.nombre, 'es'));
+    d.innerHTML = `<h3>${esc(n.nombre)}</h3><div class="tipo">${CAT[n.tipo].nombre} · ${arts.length} artistas visibles${n.total !== arts.length ? ` (de ${n.total})` : ''}</div>
+      <ul>${arts.map(a => `<li><a data-id="${a.id}">${esc(a.nombre)}</a> <span class="n">${a.nf > 1 ? '· ' + a.nf + ' fuentes' : ''}</span></li>`).join('')}</ul>`;
+  }
+  $('#detalle').style.display = 'block';
+  if (centrar) irA(n);
+  dibujar();
+}
+function cerrarDetalle(){ seleccionado = null; $('#detalle').style.display = 'none'; dibujar(); }
+$('#cerrar').addEventListener('click', cerrarDetalle);
+$('#detalle-c').addEventListener('click', e => {
+  const a = e.target.closest('a[data-id]'); if (!a) return;
+  const n = nodos.find(x => x.id === a.dataset.id); if (n) seleccionar(n, true);
+});
+function irA(n){
+  const k = Math.max(transform.k, 1.6);
+  d3.select(canvas).transition().duration(600).call(zoom.transform, d3.zoomIdentity.translate(-n.x * k, -n.y * k).scale(k));
+}
+$('#buscar').addEventListener('change', e => {
+  const q = norm(e.target.value.trim()); if (!q) return;
+  const n = nodos.find(x => norm(x.nombre) === q) || nodos.find(x => norm(x.nombre).includes(q));
+  if (n) seleccionar(n, true);
+  else { e.target.setCustomValidity('No está visible con los filtros actuales'); e.target.reportValidity(); setTimeout(() => e.target.setCustomValidity(''), 1500); }
+});
+$('#umbral').addEventListener('input', e => { $('#umbral-v').textContent = e.target.value; actualizar(false); });
+$('#minfuentes').addEventListener('change', () => actualizar(true));
+$('#aislados').addEventListener('change', () => actualizar(false));
+$('#etiquetas').addEventListener('change', dibujar);
+$('#reacomodar').addEventListener('click', () => sim.alpha(0.8).restart());
+$('#centrar').addEventListener('click', ajustarVista);
+$('#toggle').addEventListener('click', () => $('#control').classList.toggle('abierto'));
+window.addEventListener('resize', redimensionar);
+
+function ajustarVista(){
+  if (!nodos.length) return;
+  const xs = d3.extent(nodos, n => n.x), ys = d3.extent(nodos, n => n.y);
+  const w = (xs[1] - xs[0]) || 1, h = (ys[1] - ys[0]) || 1;
+  const k = Math.min(4, 0.9 * Math.min(W / w, H / h));
+  const cx = (xs[0] + xs[1]) / 2, cy = (ys[0] + ys[1]) / 2;
+  d3.select(canvas).transition().duration(600).call(zoom.transform, d3.zoomIdentity.translate(-cx * k, -cy * k).scale(k));
+}
+
+// ---------- arranque ----------
+redimensionar();
+iniciarSim();
+fetch(CSV_URL)
+  .then(r => { if (!r.ok) throw new Error(r.status); return r.text(); })
+  .then(t => {
+    construir(parseCSV(t));
+    actualizar(true);
+    $('#cargando').style.display = 'none';
+    sim.on('end.vista', () => { ajustarVista(); sim.on('end.vista', null); });
+  })
+  .catch(() => {
+    $('#cargando').innerHTML = 'No se pudo leer <code>artistas.csv</code>. Abre esta página desde GitHub Pages (o un servidor local) en la misma carpeta que el CSV.';
+  });
+</script>
+</body>
+</html>
