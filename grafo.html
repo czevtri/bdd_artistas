@@ -104,12 +104,12 @@ const CATS = [
     val: r => lista(r.medios, ',')},
   {k:'pais',        nombre:'País de nacimiento',      color:'#4f7a3a', on:false,
     val: r => r.pais_nacimiento ? [r.pais_nacimiento] : []},
+  {k:'residencia',  nombre:'País de residencia',      color:'#1f8a8a', on:false,
+    val: r => lista(r.pais_residencia, ';')},
   {k:'decada',      nombre:'Década de nacimiento',    color:'#8a6d3b', on:false,
     val: r => /^\d{4}$/.test(r.nacimiento) ? [Math.floor(+r.nacimiento/10)*10 + 's'] : []},
   {k:'fuente',      nombre:'Fuente',                  color:'#7b5aa6', on:false,
     val: r => lista(r.fuentes, ' | ')},
-  {k:'dispositivo', nombre:'Tipo de dispositivo',     color:'#b08420', on:false,
-    val: r => lista(r.tipos_de_dispositivo, ' | ')},
 ];
 const COLOR_ARTISTA = '#8f8f8a';
 const CAT = Object.fromEntries(CATS.map(c => [c.k, c]));
@@ -301,7 +301,7 @@ canvas.addEventListener('mousemove', e => {
   if (n !== hover){ hover = n; dibujar(); }
   const tip = $('#tip');
   if (n){
-    tip.textContent = n.tipo === 'artista' ? n.nombre : `${n.nombre} · ${n.grado} artistas`;
+    tip.textContent = n.tipo === 'artista' ? n.nombre : `${n.nombre} · ${CAT[n.tipo].nombre.toLowerCase()} · ${n.grado} artistas`;
     tip.style.display = 'block'; tip.style.left = (e.clientX + 12) + 'px'; tip.style.top = (e.clientY + 12) + 'px';
     canvas.style.cursor = 'pointer';
   } else { tip.style.display = 'none'; canvas.style.cursor = ''; }
@@ -320,7 +320,7 @@ function seleccionar(n, centrar){
     const fila = (et, v) => v ? `<dt>${et}</dt><dd>${esc(v)}</dd>` : '';
     const anios = r.nacimiento ? (r.muerte ? `${r.nacimiento}–${r.muerte}` : r.nacimiento) : '';
     d.innerHTML = `<h3>${esc(n.nombre)}</h3><div class="tipo">Artista · ${n.nf} ${n.nf === 1 ? 'fuente' : 'fuentes'}</div>
-      <dl>${fila('País', r.pais_nacimiento)}${fila('Años', anios)}${fila('Residencia', r.residencia)}
+      <dl>${fila('País', r.pais_nacimiento)}${fila('Años', anios)}${fila('Residencia', r.residencia ? r.residencia + (r.pais_residencia ? ' (' + r.pais_residencia + ')' : '') : '')}
       ${fila('Medios', r.medios)}${fila('Temas', r.temas)}${fila('Obra', r.obra_conocida)}${fila('Fuentes', r.fuentes)}</dl>
       <a href="index.html?q=${encodeURIComponent(n.nombre)}">Ver en la tabla →</a>`;
   } else {
