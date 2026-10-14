@@ -6,131 +6,175 @@
 <title>Red de artistas contemporáneos</title>
 <style>
   :root{
-    --bg:#ffffff; --ink:#1a1a1a; --soft:#6b6b6b; --line:#e4e4e0; --alt:#f7f7f5;
-    --accent:#1f4e79; --panel:rgba(255,255,255,.96);
+    --bg:#ffffff; --ink:#1a1a1a; --soft:#6b6b6b; --faint:#9a9a95; --line:#e4e4e0; --alt:#f6f6f3;
+    --accent:#1f4e79; --panel:rgba(255,255,255,.97);
   }
   *{box-sizing:border-box}
   html,body{margin:0;height:100%;background:var(--bg);color:var(--ink);overflow:hidden;
     font:14px/1.45 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif}
-  canvas{display:block;width:100vw;height:100vh;height:100dvh;cursor:grab;touch-action:none}
-  canvas.arrastrando{cursor:grabbing}
-  .panel{position:absolute;background:var(--panel);border:1px solid var(--line);border-radius:10px;
-    box-shadow:0 2px 12px rgba(0,0,0,.06);padding:14px 16px}
-  #control{top:16px;left:16px;width:290px;max-height:calc(100% - 32px);overflow:auto}
-  #detalle{top:16px;right:16px;width:320px;max-height:calc(100% - 32px);overflow:auto;display:none}
-  h1{font-size:17px;margin:0 0 2px;font-weight:600;letter-spacing:-.01em}
-  .sub{color:var(--soft);font-size:12px;margin:0 0 12px}
+  canvas{display:block;position:absolute;inset:0;width:100%;height:100%;touch-action:none;cursor:grab}
+  canvas.arrastrando{cursor:grabbing} canvas.sobre{cursor:pointer}
+  .panel{position:absolute;background:var(--panel);border:1px solid var(--line);border-radius:12px;
+    box-shadow:0 4px 18px rgba(0,0,0,.07)}
   a{color:var(--accent)}
-  .volver{display:inline-block;font-size:13px;text-decoration:none;margin-bottom:10px}
-  h2{font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--soft);margin:14px 0 6px;font-weight:600}
-  input[type=search],select{font:inherit;width:100%;padding:7px 10px;border:1px solid var(--line);border-radius:6px;background:#fff;color:var(--ink)}
-  label.cat{display:flex;align-items:center;gap:8px;padding:3px 0;cursor:pointer;user-select:none}
-  label.cat .punto{width:11px;height:11px;border-radius:50%;flex:none}
-  label.cat .n{margin-left:auto;color:var(--soft);font-size:12px;font-variant-numeric:tabular-nums}
-  label.opcion{display:flex;gap:8px;align-items:center;font-size:13px;padding:3px 0;cursor:pointer}
-  .fila{display:flex;align-items:center;gap:8px;font-size:13px}
-  .fila input[type=range]{flex:1}
-  .ayuda{color:var(--soft);font-size:12px;margin-top:12px;line-height:1.4}
-  button{font:inherit;padding:6px 10px;border:1px solid var(--line);border-radius:6px;background:#fff;cursor:pointer}
+  button{font:inherit;color:var(--ink);border:1px solid var(--line);border-radius:7px;background:#fff;cursor:pointer;padding:6px 10px}
   button:hover{background:var(--alt)}
-  #detalle h3{font-size:16px;margin:0 0 2px}
-  #detalle .tipo{font-size:12px;color:var(--soft);margin-bottom:10px}
-  #detalle dl{display:grid;grid-template-columns:90px 1fr;gap:4px 10px;margin:0 0 10px;font-size:13px}
+
+  #control{top:14px;left:14px;width:300px;max-height:calc(100% - 28px);display:flex;flex-direction:column}
+  #control .cab{display:flex;align-items:center;gap:8px;padding:12px 14px 10px;border-bottom:1px solid var(--line)}
+  #control.plegado .cab{border-bottom:none}
+  #control .cab h1{font-size:15px;margin:0;font-weight:650;flex:1;letter-spacing:-.01em}
+  #control .cab a{font-size:12.5px;text-decoration:none;white-space:nowrap}
+  #plegar{padding:2px 8px;font-size:15px;line-height:1.2}
+  #control .cuerpo{overflow:auto;padding:12px 14px 14px}
+  #control.plegado .cuerpo{display:none}
+  .sub{color:var(--soft);font-size:12px;margin:0 0 10px}
+  h2{font-size:10.5px;text-transform:uppercase;letter-spacing:.07em;color:var(--soft);margin:16px 0 7px;font-weight:650}
+  input[type=search],select{font:inherit;width:100%;padding:7px 10px;border:1px solid var(--line);border-radius:7px;background:#fff;color:var(--ink)}
+  .cats{display:flex;flex-direction:column;gap:3px}
+  .cat{display:flex;align-items:center;gap:9px;padding:6px 8px;border-radius:7px;cursor:pointer;user-select:none;border:1px solid transparent;position:relative}
+  .cat:hover{background:var(--alt)}
+  .cat input{position:absolute;opacity:0;pointer-events:none}
+  .cat .marca{width:12px;height:12px;border-radius:50%;flex:none;opacity:.25;transition:opacity .15s}
+  .cat .marca.linea{border-radius:2px;height:4px;width:18px}
+  .cat .nom{color:var(--faint);transition:color .15s}
+  .cat .n{margin-left:auto;color:var(--faint);font-size:12px;font-variant-numeric:tabular-nums}
+  .cat.on{border-color:var(--line);background:#fff}
+  .cat.on .marca{opacity:1} .cat.on .nom{color:var(--ink)}
+  .nota{font-size:11.5px;color:var(--soft);margin:4px 2px 0}
+  .fila{display:flex;align-items:center;gap:8px;font-size:13px;margin:6px 0}
+  .fila input[type=range]{flex:1;accent-color:var(--accent)}
+  .fila output{min-width:18px;text-align:right;font-variant-numeric:tabular-nums}
+  label.opcion{display:flex;gap:8px;align-items:center;font-size:13px;padding:3px 0;cursor:pointer}
+  .ayuda{color:var(--soft);font-size:12px;margin:14px 0 0;line-height:1.45}
+  .ayuda b{color:var(--ink);font-weight:600}
+  .tamanos{display:flex;align-items:center;gap:10px;font-size:12px;color:var(--soft);margin-top:6px}
+  .tamanos i{display:inline-block;border-radius:50%;background:#8f8f8a;flex:none}
+
+  #zoom{position:absolute;right:14px;bottom:14px;display:flex;flex-direction:column;gap:6px}
+  #zoom button{width:36px;height:36px;padding:0;font-size:17px;box-shadow:0 2px 8px rgba(0,0,0,.06)}
+
+  #detalle{top:14px;right:14px;width:330px;max-height:calc(100% - 80px);overflow:auto;display:none;padding:16px 16px 14px}
+  #detalle h3{font-size:17px;margin:0 26px 2px 0;line-height:1.25}
+  #detalle .tipo{font-size:12px;color:var(--soft);margin-bottom:10px;display:flex;align-items:center;gap:6px}
+  #detalle .tipo i{width:9px;height:9px;border-radius:50%;display:inline-block}
+  #detalle dl{display:grid;grid-template-columns:86px 1fr;gap:5px 10px;margin:0 0 12px;font-size:13px}
   #detalle dt{color:var(--soft)} #detalle dd{margin:0}
-  #detalle ul{list-style:none;padding:0;margin:0;font-size:13px;columns:1}
-  #detalle li{padding:2px 0}
-  #detalle li a{text-decoration:none;cursor:pointer}
-  #detalle li a:hover{text-decoration:underline}
-  #detalle .n{color:var(--soft);font-size:12px}
-  .cerrar{position:absolute;top:8px;right:8px;border:none;background:none;font-size:18px;line-height:1;color:var(--soft);padding:4px 8px}
-  #tip{position:absolute;pointer-events:none;background:#1a1a1a;color:#fff;font-size:12px;padding:4px 8px;border-radius:4px;display:none;white-space:nowrap}
-  #cargando{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:var(--soft);pointer-events:none}
-  #toggle{display:none;position:absolute;top:12px;left:12px;z-index:3}
-  @media (max-width:700px){
-    #toggle{display:block}
-    #control{top:52px;left:12px;right:12px;width:auto;max-height:60%;display:none}
-    #control.abierto{display:block}
-    #detalle{top:auto;bottom:12px;left:12px;right:12px;width:auto;max-height:45%}
+  #detalle ul{list-style:none;padding:0;margin:0 0 6px;font-size:13px}
+  #detalle li{padding:2px 0;display:flex;gap:6px;align-items:baseline}
+  #detalle li .n{color:var(--faint);font-size:12px;margin-left:auto;font-variant-numeric:tabular-nums}
+  #detalle .lnk{color:var(--accent);cursor:pointer;background:none;border:none;padding:0;text-align:left;font-size:13px}
+  #detalle .lnk:hover{text-decoration:underline;background:none}
+  #detalle .acciones{display:flex;gap:6px;flex-wrap:wrap;margin:4px 0 12px}
+  #detalle .chip{display:inline-block;padding:1px 8px;border-radius:10px;font-size:12px;margin:2px 3px 2px 0;color:#fff;cursor:pointer;border:none}
+  .cerrar{position:absolute;top:8px;right:8px;border:none;background:none;font-size:20px;line-height:1;color:var(--soft);padding:4px 8px}
+  .cerrar:hover{background:var(--alt)}
+
+  #vecindad{position:absolute;left:50%;top:14px;transform:translateX(-50%);display:none;align-items:center;gap:10px;
+    padding:8px 10px 8px 14px;font-size:13px;white-space:nowrap}
+  #vecindad button{padding:4px 10px}
+
+  #tip{position:absolute;pointer-events:none;background:#1a1a1a;color:#fff;font-size:12px;padding:4px 8px;border-radius:5px;display:none;white-space:nowrap;z-index:5}
+  #cargando{position:absolute;inset:0;display:flex;flex-direction:column;gap:10px;align-items:center;justify-content:center;color:var(--soft);pointer-events:none;background:rgba(255,255,255,.8)}
+  #cargando .barra{width:180px;height:3px;background:var(--line);border-radius:2px;overflow:hidden}
+  #cargando .barra i{display:block;height:100%;width:0;background:var(--accent)}
+
+  @media (max-width:760px){
+    #control{right:14px;width:auto;max-height:58%}
+    #detalle{top:auto;bottom:14px;left:14px;right:64px;width:auto;max-height:42%}
+    #vecindad{top:auto;bottom:70px}
   }
 </style>
 </head>
 <body>
 <canvas id="lienzo"></canvas>
-<div id="cargando">Cargando datos…</div>
 <div id="tip"></div>
-<button id="toggle" type="button">Controles</button>
 
 <div id="control" class="panel">
-  <a class="volver" href="index.html">← Volver a la tabla</a>
-  <h1>Red de artistas</h1>
-  <p class="sub" id="sub"></p>
-
-  <input type="search" id="buscar" list="nombres" placeholder="Buscar artista, país, tema…" autocomplete="off">
-  <datalist id="nombres"></datalist>
-
-  <h2>Nodos que agrupan</h2>
-  <div id="cats"></div>
-
-  <h2>Filtros</h2>
-  <div class="fila"><span>Agrupar solo si reúne</span><input type="range" id="umbral" min="1" max="20" value="3"><span id="umbral-v">3</span></div>
-  <div class="fila" style="margin-top:6px"><span>Artistas en</span>
-    <select id="minfuentes" style="width:auto">
-      <option value="1">1 fuente o más</option><option value="2">2 o más</option><option value="3">3 o más</option>
-    </select>
+  <div class="cab">
+    <h1>Red de artistas</h1>
+    <a href="index.html">Tabla →</a>
+    <button id="plegar" type="button" title="Plegar panel" aria-label="Plegar panel">–</button>
   </div>
-  <label class="opcion"><input type="checkbox" id="aislados" checked> Ocultar artistas sin conexión</label>
-  <label class="opcion"><input type="checkbox" id="etiquetas"> Mostrar nombres de artistas</label>
+  <div class="cuerpo">
+    <p class="sub" id="sub">Cargando…</p>
+    <input type="search" id="buscar" list="nombres" placeholder="Buscar artista o categoría…" autocomplete="off">
+    <datalist id="nombres"></datalist>
 
-  <div style="display:flex;gap:6px;margin-top:10px">
-    <button id="reacomodar" type="button">Reacomodar</button>
-    <button id="centrar" type="button">Centrar</button>
+    <h2>Agrupar por</h2>
+    <div class="cats" id="cats"></div>
+    <p class="nota">País es un solo nodo: la línea verde une a quienes nacieron ahí y la naranja a quienes viven ahí.</p>
+
+    <h2>Filtros</h2>
+    <div class="fila"><span>Categorías con al menos</span><input type="range" id="umbral" min="1" max="30" value="4"><output id="umbral-v">4</output></div>
+    <div class="fila"><span>Artistas en</span>
+      <select id="minfuentes" style="width:auto;flex:1">
+        <option value="1">1 fuente o más</option><option value="2">2 fuentes o más</option><option value="3">3 fuentes o más</option>
+      </select>
+    </div>
+    <label class="opcion"><input type="checkbox" id="aislados" checked> Ocultar artistas sin conexión</label>
+    <label class="opcion"><input type="checkbox" id="etiquetas" checked> Nombres de artistas al acercarse</label>
+
+    <h2>Tamaño</h2>
+    <div class="tamanos"><i style="width:5px;height:5px"></i><i style="width:8px;height:8px"></i><i style="width:11px;height:11px"></i>
+      <span>artistas según número de fuentes; categorías según número de artistas</span></div>
+
+    <div style="display:flex;gap:6px;margin-top:14px">
+      <button id="reacomodar" type="button">Reorganizar</button>
+      <button id="soltar" type="button" title="Libera los nodos que fijaste arrastrándolos">Soltar fijados</button>
+    </div>
+    <p class="ayuda"><b>Clic</b> en un nodo: ficha y conexiones. <b>Arrastrar</b> un nodo: queda fijo donde lo sueltes (doble clic lo libera). <b>Arrastrar el fondo</b>: moverse. <b>Rueda</b> o botones: zoom. <b>Esc</b>: limpiar selección.</p>
   </div>
-
-  <p class="ayuda">Arrastra para moverte y usa la rueda o los dedos para acercarte. Pasa sobre un nodo para ver su nombre; haz clic para ver sus conexiones. Los puntos grises son artistas; los de color, las categorías que los agrupan.</p>
 </div>
+
+<div id="vecindad" class="panel"><span id="vecindad-t"></span><button id="salir-vec" type="button">Ver toda la red</button></div>
 
 <div id="detalle" class="panel">
   <button class="cerrar" id="cerrar" type="button" aria-label="Cerrar">×</button>
   <div id="detalle-c"></div>
 </div>
 
+<div id="zoom">
+  <button id="z-mas" type="button" title="Acercar" aria-label="Acercar">+</button>
+  <button id="z-menos" type="button" title="Alejar" aria-label="Alejar">−</button>
+  <button id="z-encuadrar" type="button" title="Ver todo" aria-label="Ver todo">⤢</button>
+</div>
+
+<div id="cargando"><span id="cargando-t">Cargando datos…</span><div class="barra"><i id="progreso"></i></div></div>
+
 <script src="https://cdn.jsdelivr.net/npm/d3@7.9.0/dist/d3.min.js"></script>
 <script>
 const CSV_URL = 'artistas.csv';
-const CATS = [
-  {k:'tema',        nombre:'Tema',                    color:'#b5523b', on:true,
-    val: r => lista(r.temas, ',')},
-  {k:'medio',       nombre:'Medio',                   color:'#2f6f8f', on:true,
-    val: r => lista(r.medios, ',')},
-  {k:'nacimiento',  nombre:'País · nacimiento',       color:'#3f7d46', hub:'pais', on:false, linea:true,
-    val: r => r.pais_nacimiento ? [r.pais_nacimiento] : []},
-  {k:'residencia',  nombre:'País · residencia',       color:'#e06c1f', hub:'pais', on:false, linea:true,
-    val: r => lista(r.pais_residencia, ';')},
-  {k:'decada',      nombre:'Década de nacimiento',    color:'#8a6d3b', on:false,
-    val: r => /^\d{4}$/.test(r.nacimiento) ? [Math.floor(+r.nacimiento/10)*10 + 's'] : []},
-  {k:'fuente',      nombre:'Fuente',                  color:'#7b5aa6', on:false,
-    val: r => lista(r.fuentes, ' | ')},
-];
-const COLOR_ARTISTA = '#8f8f8a';
-const CAT = Object.fromEntries(CATS.map(c => [c.k, c]));
-// tipos de nodo agrupador (país es uno solo; nacimiento y residencia son dos tipos de enlace hacia él)
-const HUB = {tema:{nombre:'Tema', color:'#b5523b'}, medio:{nombre:'Medio', color:'#2f6f8f'},
-  pais:{nombre:'País', color:'#4a5a4c'}, decada:{nombre:'Década de nacimiento', color:'#8a6d3b'},
-  fuente:{nombre:'Fuente', color:'#7b5aa6'}};
 const lista = (s, sep) => s ? s.split(sep).map(x => x.trim()).filter(Boolean) : [];
-const norm = s => s.normalize('NFD').replace(/[̀-ͯ]/g,'').toLowerCase();
+const norm = s => s.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
 const esc = s => String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const $ = s => document.querySelector(s);
+
+// Relaciones (tipos de enlace). País de nacimiento y de residencia apuntan al mismo nodo "país".
+const CATS = [
+  {k:'tema',       nombre:'Tema',              color:'#b5523b', on:true,  val: r => lista(r.temas, ',')},
+  {k:'medio',      nombre:'Medio',             color:'#2f6f8f', on:true,  val: r => lista(r.medios, ',')},
+  {k:'nacimiento', nombre:'País · nacimiento', color:'#3f8a4a', on:false, hub:'pais', linea:true,
+    val: r => r.pais_nacimiento ? [r.pais_nacimiento] : []},
+  {k:'residencia', nombre:'País · residencia', color:'#e0701f', on:false, hub:'pais', linea:true,
+    val: r => lista(r.pais_residencia, ';')},
+  {k:'decada',     nombre:'Década de nacimiento', color:'#8a6d3b', on:false,
+    val: r => /^\d{4}$/.test(r.nacimiento) ? [Math.floor(+r.nacimiento / 10) * 10 + 's'] : []},
+  {k:'fuente',     nombre:'Fuente',            color:'#7b5aa6', on:false, val: r => lista(r.fuentes, ' | ')},
+];
+const CAT = Object.fromEntries(CATS.map(c => [c.k, c]));
+const HUB = {tema:{nombre:'Tema', color:'#b5523b'}, medio:{nombre:'Medio', color:'#2f6f8f'},
+  pais:{nombre:'País', color:'#4a5a4c'}, decada:{nombre:'Década', color:'#8a6d3b'}, fuente:{nombre:'Fuente', color:'#7b5aa6'}};
+const COLOR_ARTISTA = '#8f8f8a';
+const FUENTE_TXT = '-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif';
 
 function parseCSV(txt){
   txt = txt.replace(/^﻿/, '');
   const filas = []; let fila = [], campo = '', q = false;
   for (let i = 0; i < txt.length; i++){
     const c = txt[i];
-    if (q){
-      if (c === '"'){ if (txt[i+1] === '"'){ campo += '"'; i++; } else q = false; }
-      else campo += c;
-    } else if (c === '"') q = true;
+    if (q){ if (c === '"'){ if (txt[i+1] === '"'){ campo += '"'; i++; } else q = false; } else campo += c; }
+    else if (c === '"') q = true;
     else if (c === ','){ fila.push(campo); campo = ''; }
     else if (c === '\n' || c === '\r'){
       if (c === '\r' && txt[i+1] === '\n') i++;
@@ -147,13 +191,13 @@ function parseCSV(txt){
 // ---------- estado ----------
 let artistas = [], hubs = new Map(), todosLinks = [];
 let nodos = [], links = [], vecinos = new Map();
-let sim, transform = d3.zoomIdentity, seleccionado = null, hover = null;
+let sim, transform = d3.zoomIdentity, seleccionado = null, hover = null, vecindad = null;
+let interactuando = false, version = 0, qt = null, qtVersion = -1, pendiente = false, maxRad = 10;
 const canvas = $('#lienzo'), ctx = canvas.getContext('2d');
 let W = 0, H = 0, DPR = 1;
 
 function construir(rows){
-  artistas = rows.map((r, i) => ({id:'a'+i, tipo:'artista', nombre:r.artista, r, nf: +r.n_fuentes || 1}));
-  hubs = new Map(); todosLinks = [];
+  artistas = rows.map((r, i) => ({id:'a' + i, tipo:'artista', nombre:r.artista, r, nf: +r.n_fuentes || 1}));
   for (const a of artistas){
     for (const c of CATS){
       for (const v of c.val(a.r)){
@@ -164,231 +208,414 @@ function construir(rows){
       }
     }
   }
-  // posiciones iniciales en espiral para que arranque ordenado
-  const todos = [...artistas, ...hubs.values()];
-  todos.forEach((n, i) => { const a = i * 2.39996, r = 8 * Math.sqrt(i); n.x = Math.cos(a)*r; n.y = Math.sin(a)*r; });
-  // conteos en los controles
+  [...artistas, ...hubs.values()].forEach((n, i) => { const a = i * 2.39996, r = 9 * Math.sqrt(i); n.x = Math.cos(a) * r; n.y = Math.sin(a) * r; });
   const cont = Object.fromEntries(CATS.map(c => [c.k, new Set(todosLinks.filter(l => l.cat === c.k).map(l => l.t)).size]));
   $('#cats').innerHTML = CATS.map(c => `
-    <label class="cat"><input type="checkbox" data-k="${c.k}" ${c.on ? 'checked' : ''}>
-      <span class="punto" style="${c.linea ? `border-radius:2px;height:4px;width:16px;background:${c.color}` : `background:${c.color}`}"></span>${c.nombre}
-      <span class="n">${cont[c.k]}</span></label>`).join('');
-  $('#cats').addEventListener('change', e => { const c = CAT[e.target.dataset.k]; if (c){ c.on = e.target.checked; actualizar(true); } });
-  $('#nombres').innerHTML = [...artistas.map(a => a.nombre), ...[...hubs.values()].map(h => h.nombre)]
-    .filter((v, i, arr) => arr.indexOf(v) === i).map(v => `<option value="${esc(v)}">`).join('');
+    <label class="cat ${c.on ? 'on' : ''}" data-k="${c.k}">
+      <input type="checkbox" ${c.on ? 'checked' : ''}>
+      <span class="marca ${c.linea ? 'linea' : ''}" style="background:${c.color}"></span>
+      <span class="nom">${c.nombre}</span><span class="n">${cont[c.k]}</span></label>`).join('');
+  $('#cats').addEventListener('change', e => {
+    const el = e.target.closest('.cat'); const c = CAT[el.dataset.k];
+    c.on = e.target.checked; el.classList.toggle('on', c.on);
+    actualizar(true);
+  });
+  $('#nombres').innerHTML = [...new Set([...artistas.map(a => a.nombre), ...[...hubs.values()].map(h => h.nombre)])]
+    .map(v => `<option value="${esc(v)}">`).join('');
   $('#sub').textContent = `${artistas.length.toLocaleString('es')} artistas · ${hubs.size} categorías`;
 }
 
-function actualizar(recalentar){
+function actualizar(reorganizar){
   const umbral = +$('#umbral').value, minf = +$('#minfuentes').value, aislar = $('#aislados').checked;
   const artOk = new Set(artistas.filter(a => a.nf >= minf));
-  // grado de cada hub considerando solo artistas visibles
   const grado = new Map();
   for (const l of todosLinks){
     if (!CAT[l.cat].on || !artOk.has(l.s)) continue;
     grado.set(l.t, (grado.get(l.t) || 0) + 1);
   }
-  const hubOk = new Set([...grado].filter(([h, g]) => g >= umbral).map(([h]) => h));
-  links = todosLinks.filter(l => CAT[l.cat].on && artOk.has(l.s) && hubOk.has(l.t)).map(l => ({source:l.s, target:l.t, cat:l.cat}));
+  const hubOk = new Set([...grado].filter(([, g]) => g >= umbral).map(([h]) => h));
+  let base = todosLinks.filter(l => CAT[l.cat].on && artOk.has(l.s) && hubOk.has(l.t));
+
+  // modo vecindad: solo el nodo elegido y su entorno inmediato
+  if (vecindad){
+    if (vecindad.tipo === 'artista'){
+      const suyos = new Set(base.filter(l => l.s === vecindad).map(l => l.t));
+      let arts = new Set(base.filter(l => suyos.has(l.t)).map(l => l.s));
+      if (arts.size > 250){   // demasiados: quedarse con quienes comparten 2+ categorías
+        const comp = new Map();
+        base.forEach(l => { if (suyos.has(l.t)) comp.set(l.s, (comp.get(l.s) || 0) + 1); });
+        arts = new Set([...comp].filter(([, c]) => c >= 2).map(([a]) => a));
+      }
+      arts.add(vecindad);
+      base = base.filter(l => arts.has(l.s) && suyos.has(l.t));
+    } else {
+      const arts = new Set(base.filter(l => l.t === vecindad).map(l => l.s));
+      base = base.filter(l => arts.has(l.s));
+    }
+  }
+  links = base.map(l => ({source:l.s, target:l.t, cat:l.cat}));
   const conectados = new Set(links.map(l => l.source));
-  const artVis = [...artOk].filter(a => !aislar || conectados.has(a));
-  hubOk.forEach(h => h.grado = grado.get(h));
-  nodos = [...artVis, ...hubOk];
+  const hubsUsados = new Set(links.map(l => l.target));
+  const artVis = [...artOk].filter(a => conectados.has(a) || (!aislar && !vecindad));
+  nodos = [...artVis, ...[...hubOk].filter(h => hubsUsados.has(h))];
   vecinos = new Map(nodos.map(n => [n, new Set()]));
-  for (const l of links){ vecinos.get(l.source).add(l.target); vecinos.get(l.target).add(l.source); }
-  nodos.forEach(n => n.rad = n.tipo === 'artista' ? 2.2 + n.nf * 0.9 : 5 + Math.sqrt(n.grado) * 1.7);
-  if (seleccionado && !vecinos.has(seleccionado)) cerrarDetalle();
+  const gvis = new Map();
+  for (const l of links){
+    vecinos.get(l.source).add(l.target); vecinos.get(l.target).add(l.source);
+    gvis.set(l.target, (gvis.get(l.target) || 0) + 1);
+  }
+  nodos.forEach(n => {
+    if (n.tipo === 'artista') n.rad = 2 + n.nf * 1.1;
+    else { n.grado = gvis.get(n) || 0; n.rad = 5 + Math.sqrt(n.grado) * 1.9; }
+  });
+  maxRad = d3.max(nodos, n => n.rad) || 10;
+  if (seleccionado && !vecinos.has(seleccionado)) cerrarDetalle(false);
+  if (hover && !vecinos.has(hover)) hover = null;
 
   sim.nodes(nodos);
   sim.force('link').links(links);
-  sim.alpha(recalentar ? 0.6 : 0.3).restart();
+  version++;
+  asentar(reorganizar ? 260 : 90, reorganizar ? 0.9 : 0.35, reorganizar);
 }
 
 function iniciarSim(){
   sim = d3.forceSimulation()
-    .force('link', d3.forceLink().id(d => d.id).distance(l => 18 + l.target.rad * 1.5))
-    .force('charge', d3.forceManyBody().strength(d => d.tipo === 'artista' ? -14 : -60 - d.rad * 6).distanceMax(600))
-    .force('collide', d3.forceCollide(d => d.rad + 1.2).iterations(1))
-    .force('x', d3.forceX(0).strength(0.02))
-    .force('y', d3.forceY(0).strength(0.02))
-    .alphaDecay(0.025)
-    .on('tick', dibujar);
+    .force('link', d3.forceLink().id(d => d.id).distance(l => 16 + l.target.rad * 1.4))
+    .force('charge', d3.forceManyBody().strength(d => d.tipo === 'artista' ? -12 : -50 - d.rad * 7).distanceMax(700).theta(0.95))
+    .force('collide', d3.forceCollide(d => d.rad + 1).iterations(1))
+    .force('x', d3.forceX(0).strength(0.025))
+    .force('y', d3.forceY(0).strength(0.025))
+    .alphaDecay(0.03)
+    .stop();
+  sim.on('tick', () => { version++; pedirDibujo(); });
+}
+
+// Calcula la disposición en lotes (sin animar cuadro a cuadro) y luego dibuja.
+let asentando = 0;
+function asentar(pasos, alfa, encuadrar){
+  const turno = ++asentando;
+  sim.stop(); sim.alpha(alfa);
+  const cargando = $('#cargando'), barra = $('#progreso');
+  cargando.style.display = 'flex'; $('#cargando-t').textContent = 'Organizando la red…';
+  let hechos = 0;
+  (function lote(){
+    if (turno !== asentando) return;
+    const t0 = performance.now();
+    while (hechos < pasos && performance.now() - t0 < 28){ sim.tick(); hechos++; }
+    barra.style.width = Math.round(100 * hechos / pasos) + '%';
+    if (hechos < pasos) requestAnimationFrame(lote);
+    else {
+      cargando.style.display = 'none';
+      version++;
+      if (encuadrar) encuadrarVista(false); else pedirDibujo();
+    }
+  })();
 }
 
 // ---------- dibujo ----------
+function pedirDibujo(){ if (!pendiente){ pendiente = true; requestAnimationFrame(() => { pendiente = false; dibujar(); }); } }
 function redimensionar(){
-  DPR = window.devicePixelRatio || 1;
+  DPR = Math.min(window.devicePixelRatio || 1, 2);
   W = window.innerWidth; H = window.innerHeight;
   canvas.width = W * DPR; canvas.height = H * DPR;
-  dibujar();
+  pedirDibujo();
 }
-function colorDe(n){ return n.tipo === 'artista' ? COLOR_ARTISTA : HUB[n.tipo].color; }
+const colorDe = n => n.tipo === 'artista' ? COLOR_ARTISTA : HUB[n.tipo].color;
+const aPantalla = (x, y) => [W/2 + transform.x + x * transform.k, H/2 + transform.y + y * transform.k];
 
 function dibujar(){
+  const k = transform.k;
   ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
   ctx.clearRect(0, 0, W, H);
+  ctx.save();
   ctx.translate(W/2 + transform.x, H/2 + transform.y);
-  ctx.scale(transform.k, transform.k);
+  ctx.scale(k, k);
   const foco = seleccionado || hover;
   const vec = foco ? vecinos.get(foco) : null;
+  const atenuar = !!seleccionado;   // el hover solo resalta; la selección atenúa el resto
 
-  // enlaces
-  ctx.lineWidth = 0.6 / transform.k;
+  // enlaces agrupados por relación: un solo trazo por color
+  ctx.lineWidth = Math.max(0.35, 0.7 / k);
+  const alfa = atenuar ? 0.035 : (k < 0.6 ? 0.07 : 0.11);
   for (const c of CATS){
     if (!c.on) continue;
-    ctx.strokeStyle = c.color; ctx.globalAlpha = foco ? 0.03 : 0.09;
+    ctx.strokeStyle = c.color; ctx.globalAlpha = c.linea ? alfa * 1.6 : alfa;
     ctx.beginPath();
-    for (const l of links){ if (l.cat !== c.k) continue; ctx.moveTo(l.source.x, l.source.y); ctx.lineTo(l.target.x, l.target.y); }
+    for (const l of links){ if (l.cat === c.k){ ctx.moveTo(l.source.x, l.source.y); ctx.lineTo(l.target.x, l.target.y); } }
     ctx.stroke();
   }
   if (foco){
-    ctx.globalAlpha = 0.75; ctx.lineWidth = 1.2 / transform.k;
+    ctx.globalAlpha = 0.85; ctx.lineWidth = 1.4 / k;
     for (const l of links){
       if (l.source !== foco && l.target !== foco) continue;
       ctx.strokeStyle = CAT[l.cat].color;
       ctx.beginPath(); ctx.moveTo(l.source.x, l.source.y); ctx.lineTo(l.target.x, l.target.y); ctx.stroke();
     }
   }
-  // nodos: primero artistas, luego categorías encima
-  for (const pase of ['artista', 'hub']){
+  // nodos: artistas abajo, categorías arriba
+  for (const pase of [true, false]){
     for (const n of nodos){
-      if ((n.tipo === 'artista') !== (pase === 'artista')) continue;
-      const activo = !foco || n === foco || vec.has(n);
-      ctx.globalAlpha = activo ? 1 : 0.15;
+      if ((n.tipo === 'artista') !== pase) continue;
+      const activo = !atenuar || n === foco || vec.has(n);
+      ctx.globalAlpha = activo ? 1 : 0.12;
       ctx.fillStyle = colorDe(n);
-      ctx.beginPath(); ctx.arc(n.x, n.y, n.rad, 0, Math.PI*2); ctx.fill();
-      if (n === foco){ ctx.lineWidth = 2 / transform.k; ctx.strokeStyle = '#1a1a1a'; ctx.stroke(); }
+      ctx.beginPath(); ctx.arc(n.x, n.y, n.rad, 0, Math.PI * 2); ctx.fill();
+      if (!pase){ ctx.lineWidth = 1.5 / k; ctx.strokeStyle = '#fff'; ctx.stroke(); }
+      if (n.fx != null){ ctx.lineWidth = 1.5 / k; ctx.strokeStyle = '#1a1a1a'; ctx.setLineDash([2/k, 2/k]); ctx.stroke(); ctx.setLineDash([]); }
     }
   }
-  // etiquetas
-  ctx.globalAlpha = 1;
-  ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-  ctx.lineJoin = 'round';
-  const k = transform.k;
-  const mostrarArt = $('#etiquetas').checked;
+  if (foco){
+    ctx.globalAlpha = 1; ctx.lineWidth = 2.5 / k; ctx.strokeStyle = '#1a1a1a';
+    ctx.beginPath(); ctx.arc(foco.x, foco.y, foco.rad + 2 / k, 0, Math.PI * 2); ctx.stroke();
+  }
+  ctx.restore();
+  dibujarEtiquetas(foco, vec);
+}
+
+// Etiquetas en coordenadas de pantalla, por prioridad y sin superponerse.
+function dibujarEtiquetas(foco, vec){
+  const k = transform.k, cand = [];
+  const enPantalla = (x, y) => x > -100 && x < W + 100 && y > -30 && y < H + 30;
+  const nombresArt = $('#etiquetas').checked && k > 1.1 && !interactuando;
   for (const n of nodos){
     const esHub = n.tipo !== 'artista';
-    let ver = false;
-    if (foco) ver = n === foco || vec.has(n);
-    else if (esHub) ver = n.rad * k > 7;
-    else ver = mostrarArt && k > 1.4;
-    if (!ver) continue;
-    const fs = esHub ? Math.max(11, Math.min(16, 9 + n.rad * 0.35)) : 10.5;
-    ctx.font = `${esHub ? 600 : 400} ${fs / k}px -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif`;
-    const y = esHub ? n.y : n.y - n.rad - 7 / k;
-    ctx.lineWidth = 3 / k; ctx.strokeStyle = 'rgba(255,255,255,.92)';
-    ctx.strokeText(n.nombre, n.x, y);
-    ctx.fillStyle = esHub ? '#1a1a1a' : '#444';
-    ctx.fillText(n.nombre, n.x, y);
+    let pri;
+    if (foco && (n === foco || vec.has(n))) pri = n === foco ? 1e9 : 1e6 + (esHub ? n.grado : n.nf * 10);
+    else if (seleccionado) continue;
+    else if (esHub) pri = 1e3 + n.grado;
+    else if (nombresArt) pri = n.nf;
+    else continue;
+    const [x, y] = aPantalla(n.x, n.y);
+    if (!enPantalla(x, y)) continue;
+    cand.push({n, x, y, pri, esHub});
+  }
+  cand.sort((a, b) => b.pri - a.pri);
+  const puestas = [];
+  ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+  ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.lineJoin = 'round';
+  let cuenta = 0;
+  for (const c of cand){
+    if (cuenta > 260) break;
+    const fs = c.esHub ? Math.max(11, Math.min(17, 9 + c.n.rad * k * 0.18)) : 11;
+    ctx.font = `${c.esHub ? 650 : 400} ${fs}px ${FUENTE_TXT}`;
+    const w = ctx.measureText(c.n.nombre).width, h = fs + 3;
+    const y = c.esHub ? c.y : c.y - c.n.rad * k - fs * 0.8;
+    const r = {x0:c.x - w/2 - 2, x1:c.x + w/2 + 2, y0:y - h/2, y1:y + h/2};
+    if (c.pri < 1e6 && puestas.some(p => r.x0 < p.x1 && r.x1 > p.x0 && r.y0 < p.y1 && r.y1 > p.y0)) continue;
+    puestas.push(r); cuenta++;
+    ctx.globalAlpha = 1;
+    ctx.lineWidth = 3.5; ctx.strokeStyle = 'rgba(255,255,255,.95)';
+    ctx.strokeText(c.n.nombre, c.x, y);
+    ctx.fillStyle = c.esHub ? '#141414' : '#3d3d3d';
+    ctx.fillText(c.n.nombre, c.x, y);
   }
 }
 
-// ---------- interacción ----------
+// ---------- búsqueda espacial ----------
 function nodoEn(px, py){
+  if (!nodos.length) return null;
+  if (qtVersion !== version){ qt = d3.quadtree(nodos, d => d.x, d => d.y); qtVersion = version; }
   const x = (px - W/2 - transform.x) / transform.k, y = (py - H/2 - transform.y) / transform.k;
+  const margen = 5 / transform.k, r = maxRad + margen;
   let mejor = null, dmin = Infinity;
-  for (let i = nodos.length - 1; i >= 0; i--){
-    const n = nodos[i], d = Math.hypot(n.x - x, n.y - y), lim = n.rad + 4 / transform.k;
-    if (d < lim && d < dmin){ dmin = d; mejor = n; }
-  }
+  qt.visit((q, x0, y0, x1, y1) => {
+    if (!q.length){
+      do {
+        const n = q.data, d = Math.hypot(n.x - x, n.y - y);
+        if (d <= n.rad + margen){
+          const s = d - n.rad + (n.tipo === 'artista' ? 0 : -1000);   // las categorías ganan
+          if (s < dmin){ dmin = s; mejor = n; }
+        }
+      } while ((q = q.next));
+    }
+    return x0 > x + r || x1 < x - r || y0 > y + r || y1 < y - r;
+  });
   return mejor;
 }
-const zoom = d3.zoom().scaleExtent([0.08, 12])
-  .on('start', () => canvas.classList.add('arrastrando'))
-  .on('end', () => canvas.classList.remove('arrastrando'))
-  .on('zoom', e => { transform = e.transform; dibujar(); });
-d3.select(canvas).call(zoom).on('dblclick.zoom', null);
+const punteroEn = ev => {
+  const r = canvas.getBoundingClientRect();
+  const p = ev.touches && ev.touches.length ? ev.touches[0] : ev;
+  return [p.clientX - r.left, p.clientY - r.top];
+};
+
+// ---------- zoom y arrastre ----------
+const zoom = d3.zoom().scaleExtent([0.05, 14])
+  .filter(ev => ev.type === 'wheel' || (!ev.button && !nodoEn(...punteroEn(ev))))
+  .on('start', ev => { if (ev.sourceEvent && ev.sourceEvent.type !== 'wheel') canvas.classList.add('arrastrando'); interactuando = true; })
+  .on('zoom', ev => { transform = ev.transform; pedirDibujo(); })
+  .on('end', () => { canvas.classList.remove('arrastrando'); interactuando = false; pedirDibujo(); });
+
+let simViva = false;
+const arrastre = d3.drag()
+  .container(canvas)
+  .subject(ev => { const n = nodoEn(ev.x, ev.y); return n ? {n, x:ev.x, y:ev.y} : null; })
+  .on('start', () => { interactuando = true; canvas.classList.add('arrastrando'); $('#tip').style.display = 'none'; })
+  .on('drag', ev => {
+    const n = ev.subject.n;
+    n.fx = n.x = (ev.x - W/2 - transform.x) / transform.k;
+    n.fy = n.y = (ev.y - H/2 - transform.y) / transform.k;
+    if (!simViva){ simViva = true; sim.alphaTarget(0.08).restart(); }
+    pedirDibujo();
+  })
+  .on('end', () => {
+    interactuando = false; canvas.classList.remove('arrastrando');
+    if (simViva){ simViva = false; sim.alphaTarget(0); setTimeout(() => { if (!simViva) sim.stop(); }, 900); }
+    version++; pedirDibujo();
+  });
+
+d3.select(canvas).call(arrastre).call(zoom).on('dblclick.zoom', null);
 
 canvas.addEventListener('mousemove', e => {
-  const n = nodoEn(e.clientX, e.clientY);
-  if (n !== hover){ hover = n; dibujar(); }
+  if (interactuando) return;
+  const n = nodoEn(...punteroEn(e));
+  if (n !== hover){ hover = n; pedirDibujo(); }
+  canvas.classList.toggle('sobre', !!n);
   const tip = $('#tip');
   if (n){
     tip.textContent = n.tipo === 'artista' ? n.nombre : `${n.nombre} · ${HUB[n.tipo].nombre.toLowerCase()} · ${n.grado} artistas`;
-    tip.style.display = 'block'; tip.style.left = (e.clientX + 12) + 'px'; tip.style.top = (e.clientY + 12) + 'px';
-    canvas.style.cursor = 'pointer';
-  } else { tip.style.display = 'none'; canvas.style.cursor = ''; }
+    tip.style.display = 'block';
+    tip.style.left = Math.min(e.clientX + 14, W - tip.offsetWidth - 8) + 'px';
+    tip.style.top = (e.clientY + 14) + 'px';
+  } else tip.style.display = 'none';
 });
-canvas.addEventListener('mouseleave', () => { hover = null; $('#tip').style.display = 'none'; dibujar(); });
+canvas.addEventListener('mouseleave', () => { hover = null; $('#tip').style.display = 'none'; pedirDibujo(); });
 canvas.addEventListener('click', e => {
-  const n = nodoEn(e.clientX, e.clientY);
-  if (n) seleccionar(n); else cerrarDetalle();
+  const n = nodoEn(...punteroEn(e));
+  if (n) seleccionar(n); else if (seleccionado) cerrarDetalle(true);
+});
+canvas.addEventListener('dblclick', e => {
+  const n = nodoEn(...punteroEn(e));
+  if (n && n.fx != null){ n.fx = n.fy = null; sim.alpha(0.2).restart(); setTimeout(() => sim.stop(), 700); }
 });
 
+// ---------- ficha ----------
 function seleccionar(n, centrar){
   seleccionado = n;
   const d = $('#detalle-c');
+  const acciones = `<div class="acciones">
+      ${vecindad === n ? '' : `<button type="button" data-acc="vecindad">Ver solo su vecindad</button>`}
+      <button type="button" data-acc="centrar">Centrar</button></div>`;
   if (n.tipo === 'artista'){
     const r = n.r;
     const fila = (et, v) => v ? `<dt>${et}</dt><dd>${esc(v)}</dd>` : '';
     const anios = r.nacimiento ? (r.muerte ? `${r.nacimiento}–${r.muerte}` : r.nacimiento) : '';
-    d.innerHTML = `<h3>${esc(n.nombre)}</h3><div class="tipo">Artista · ${n.nf} ${n.nf === 1 ? 'fuente' : 'fuentes'}</div>
-      <dl>${fila('País', r.pais_nacimiento)}${fila('Años', anios)}${fila('Residencia', r.residencia ? r.residencia + (r.pais_residencia ? ' (' + r.pais_residencia + ')' : '') : '')}
+    const res = r.residencia ? r.residencia + (r.pais_residencia ? ` (${r.pais_residencia})` : '') : '';
+    const chips = [...vecinos.get(n)].sort((a, b) => a.tipo.localeCompare(b.tipo))
+      .map(h => `<button class="chip" data-id="${h.id}" style="background:${HUB[h.tipo].color}">${esc(h.nombre)}</button>`).join('');
+    d.innerHTML = `<h3>${esc(n.nombre)}</h3>
+      <div class="tipo"><i style="background:${COLOR_ARTISTA}"></i>Artista · ${n.nf} ${n.nf === 1 ? 'fuente' : 'fuentes'}</div>
+      ${acciones}
+      <dl>${fila('Nacimiento', [r.pais_nacimiento, anios].filter(Boolean).join(', '))}${fila('Residencia', res)}
       ${fila('Medios', r.medios)}${fila('Temas', r.temas)}${fila('Obra', r.obra_conocida)}${fila('Fuentes', r.fuentes)}</dl>
-      <a href="index.html?q=${encodeURIComponent(n.nombre)}">Ver en la tabla →</a>`;
+      ${chips ? `<h2>Conectado con</h2><div>${chips}</div>` : ''}
+      <p style="margin:12px 0 0;font-size:13px"><a href="index.html?q=${encodeURIComponent(n.nombre)}">Ver en la tabla →</a></p>`;
   } else {
     const orden = (a, b) => b.nf - a.nf || a.nombre.localeCompare(b.nombre, 'es');
-    const item = a => `<li><a data-id="${a.id}">${esc(a.nombre)}</a> <span class="n">${a.nf > 1 ? '· ' + a.nf + ' fuentes' : ''}</span></li>`;
+    const item = a => `<li><button class="lnk" data-id="${a.id}">${esc(a.nombre)}</button><span class="n">${a.nf > 1 ? a.nf + ' fuentes' : ''}</span></li>`;
     const arts = [...vecinos.get(n)].sort(orden);
     let cuerpo;
     if (n.tipo === 'pais'){
       const por = k => links.filter(l => l.target === n && l.cat === k).map(l => l.source).sort(orden);
       const secc = (k, titulo) => { const xs = por(k); return xs.length ? `<h2 style="color:${CAT[k].color}">${titulo} · ${xs.length}</h2><ul>${xs.map(item).join('')}</ul>` : ''; };
       cuerpo = secc('nacimiento', 'Nacieron aquí') + secc('residencia', 'Viven aquí');
-    } else cuerpo = `<ul>${arts.map(item).join('')}</ul>`;
-    d.innerHTML = `<h3>${esc(n.nombre)}</h3><div class="tipo">${HUB[n.tipo].nombre} · ${arts.length} artistas visibles</div>${cuerpo}`;
+    } else cuerpo = `<h2>Artistas · ${arts.length}</h2><ul>${arts.map(item).join('')}</ul>`;
+    // categorías que más aparecen junto a esta, entre sus artistas
+    const co = new Map();
+    for (const a of arts) for (const h of vecinos.get(a)) if (h !== n) co.set(h, (co.get(h) || 0) + 1);
+    const top = [...co].sort((a, b) => b[1] - a[1]).slice(0, 10);
+    const coHtml = top.length ? `<h2>Aparece junto a</h2><ul>${top.map(([h, c]) =>
+      `<li><i style="width:8px;height:8px;border-radius:50%;background:${HUB[h.tipo].color};flex:none;align-self:center"></i><button class="lnk" data-id="${h.id}">${esc(h.nombre)}</button><span class="n">${c}</span></li>`).join('')}</ul>` : '';
+    d.innerHTML = `<h3>${esc(n.nombre)}</h3>
+      <div class="tipo"><i style="background:${HUB[n.tipo].color}"></i>${HUB[n.tipo].nombre} · ${arts.length} artistas visibles${n.total > arts.length ? ` de ${n.total}` : ''}</div>
+      ${acciones}${coHtml}${cuerpo}`;
   }
   $('#detalle').style.display = 'block';
+  $('#detalle').scrollTop = 0;
   if (centrar) irA(n);
-  dibujar();
+  pedirDibujo();
 }
-function cerrarDetalle(){ seleccionado = null; $('#detalle').style.display = 'none'; dibujar(); }
-$('#cerrar').addEventListener('click', cerrarDetalle);
+function cerrarDetalle(redibujar){ seleccionado = null; $('#detalle').style.display = 'none'; if (redibujar !== false) pedirDibujo(); }
+$('#cerrar').addEventListener('click', () => cerrarDetalle(true));
 $('#detalle-c').addEventListener('click', e => {
-  const a = e.target.closest('a[data-id]'); if (!a) return;
-  const n = nodos.find(x => x.id === a.dataset.id); if (n) seleccionar(n, true);
+  const b = e.target.closest('[data-id],[data-acc]'); if (!b) return;
+  if (b.dataset.acc === 'vecindad'){ entrarVecindad(seleccionado); return; }
+  if (b.dataset.acc === 'centrar'){ irA(seleccionado); return; }
+  const n = nodos.find(x => x.id === b.dataset.id); if (n) seleccionar(n, true);
 });
-function irA(n){
-  const k = Math.max(transform.k, 1.6);
-  d3.select(canvas).transition().duration(600).call(zoom.transform, d3.zoomIdentity.translate(-n.x * k, -n.y * k).scale(k));
-}
-$('#buscar').addEventListener('change', e => {
-  const q = norm(e.target.value.trim()); if (!q) return;
-  const n = nodos.find(x => norm(x.nombre) === q) || nodos.find(x => norm(x.nombre).includes(q));
-  if (n) seleccionar(n, true);
-  else { e.target.setCustomValidity('No está visible con los filtros actuales'); e.target.reportValidity(); setTimeout(() => e.target.setCustomValidity(''), 1500); }
-});
-$('#umbral').addEventListener('input', e => { $('#umbral-v').textContent = e.target.value; actualizar(false); });
-$('#minfuentes').addEventListener('change', () => actualizar(true));
-$('#aislados').addEventListener('change', () => actualizar(false));
-$('#etiquetas').addEventListener('change', dibujar);
-$('#reacomodar').addEventListener('click', () => sim.alpha(0.8).restart());
-$('#centrar').addEventListener('click', ajustarVista);
-$('#toggle').addEventListener('click', () => $('#control').classList.toggle('abierto'));
-window.addEventListener('resize', redimensionar);
 
-function ajustarVista(){
+function entrarVecindad(n){
+  vecindad = n;
+  $('#vecindad-t').innerHTML = `Vecindad de <b>${esc(n.nombre)}</b>`;
+  $('#vecindad').style.display = 'flex';
+  actualizar(true);
+  seleccionar(n);
+}
+function salirVecindad(){
+  if (!vecindad) return;
+  const n = vecindad; vecindad = null;
+  $('#vecindad').style.display = 'none';
+  actualizar(true);
+  if (vecinos.has(n)) seleccionar(n);
+}
+$('#salir-vec').addEventListener('click', salirVecindad);
+
+// ---------- navegación ----------
+function irA(n){
+  const k = Math.max(transform.k, 1.8);
+  d3.select(canvas).transition().duration(550).call(zoom.transform, d3.zoomIdentity.translate(-n.x * k, -n.y * k).scale(k));
+}
+function encuadrarVista(animar = true){
   if (!nodos.length) return;
   const xs = d3.extent(nodos, n => n.x), ys = d3.extent(nodos, n => n.y);
   const w = (xs[1] - xs[0]) || 1, h = (ys[1] - ys[0]) || 1;
-  const k = Math.min(4, 0.9 * Math.min(W / w, H / h));
+  const k = Math.min(3, 0.88 * Math.min(W / w, H / h));
   const cx = (xs[0] + xs[1]) / 2, cy = (ys[0] + ys[1]) / 2;
-  d3.select(canvas).transition().duration(600).call(zoom.transform, d3.zoomIdentity.translate(-cx * k, -cy * k).scale(k));
+  const t = d3.zoomIdentity.translate(-cx * k, -cy * k).scale(k);
+  const sel = d3.select(canvas);
+  if (animar) sel.transition().duration(550).call(zoom.transform, t); else sel.call(zoom.transform, t);
 }
+$('#z-mas').addEventListener('click', () => d3.select(canvas).transition().duration(250).call(zoom.scaleBy, 1.6));
+$('#z-menos').addEventListener('click', () => d3.select(canvas).transition().duration(250).call(zoom.scaleBy, 1 / 1.6));
+$('#z-encuadrar').addEventListener('click', () => encuadrarVista(true));
+
+$('#buscar').addEventListener('change', e => {
+  const q = norm(e.target.value.trim()); if (!q) return;
+  const n = nodos.find(x => norm(x.nombre) === q) || nodos.find(x => norm(x.nombre).includes(q));
+  if (!n){
+    const existe = [...artistas, ...hubs.values()].some(x => norm(x.nombre).includes(q));
+    e.target.setCustomValidity(existe ? 'Existe, pero está oculto por los filtros actuales' : 'No se encontró');
+    e.target.reportValidity(); setTimeout(() => e.target.setCustomValidity(''), 1800);
+    return;
+  }
+  seleccionar(n, true); e.target.blur();
+});
+$('#umbral').addEventListener('input', e => { $('#umbral-v').textContent = e.target.value; });
+$('#umbral').addEventListener('change', () => actualizar(false));
+$('#minfuentes').addEventListener('change', () => actualizar(true));
+$('#aislados').addEventListener('change', () => actualizar(false));
+$('#etiquetas').addEventListener('change', pedirDibujo);
+$('#reacomodar').addEventListener('click', () => { nodos.forEach(n => { n.fx = n.fy = null; }); asentar(300, 1, true); });
+$('#soltar').addEventListener('click', () => { nodos.forEach(n => { n.fx = n.fy = null; }); asentar(80, 0.3, false); });
+$('#plegar').addEventListener('click', () => {
+  const p = $('#control').classList.toggle('plegado');
+  $('#plegar').textContent = p ? '+' : '–';
+});
+document.addEventListener('keydown', e => {
+  if (e.key !== 'Escape' || e.target.matches('input')) return;
+  if (seleccionado) cerrarDetalle(true); else if (vecindad) salirVecindad();
+});
+window.addEventListener('resize', redimensionar);
+if (window.innerWidth < 760){ $('#control').classList.add('plegado'); $('#plegar').textContent = '+'; }
 
 // ---------- arranque ----------
 redimensionar();
 iniciarSim();
 fetch(CSV_URL)
   .then(r => { if (!r.ok) throw new Error(r.status); return r.text(); })
-  .then(t => {
-    construir(parseCSV(t));
-    actualizar(true);
-    $('#cargando').style.display = 'none';
-    sim.on('end.vista', () => { ajustarVista(); sim.on('end.vista', null); });
-  })
+  .then(t => { construir(parseCSV(t)); actualizar(true); })
   .catch(() => {
-    $('#cargando').innerHTML = 'No se pudo leer <code>artistas.csv</code>. Abre esta página desde GitHub Pages (o un servidor local) en la misma carpeta que el CSV.';
+    $('#cargando-t').innerHTML = 'No se pudo leer <code>artistas.csv</code>. Abre esta página desde GitHub Pages, en la misma carpeta que el CSV.';
+    $('#progreso').parentNode.style.display = 'none';
   });
 </script>
 </body>
