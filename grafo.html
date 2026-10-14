@@ -102,9 +102,9 @@ const CATS = [
     val: r => lista(r.temas, ',')},
   {k:'medio',       nombre:'Medio',                   color:'#2f6f8f', on:true,
     val: r => lista(r.medios, ',')},
-  {k:'pais',        nombre:'País de nacimiento',      color:'#4f7a3a', on:false,
+  {k:'nacimiento',  nombre:'País · nacimiento',       color:'#3f7d46', hub:'pais', on:false, linea:true,
     val: r => r.pais_nacimiento ? [r.pais_nacimiento] : []},
-  {k:'residencia',  nombre:'País de residencia',      color:'#1f8a8a', on:false,
+  {k:'residencia',  nombre:'País · residencia',       color:'#e06c1f', hub:'pais', on:false, linea:true,
     val: r => lista(r.pais_residencia, ';')},
   {k:'decada',      nombre:'Década de nacimiento',    color:'#8a6d3b', on:false,
     val: r => /^\d{4}$/.test(r.nacimiento) ? [Math.floor(+r.nacimiento/10)*10 + 's'] : []},
@@ -113,6 +113,10 @@ const CATS = [
 ];
 const COLOR_ARTISTA = '#8f8f8a';
 const CAT = Object.fromEntries(CATS.map(c => [c.k, c]));
+// tipos de nodo agrupador (país es uno solo; nacimiento y residencia son dos tipos de enlace hacia él)
+const HUB = {tema:{nombre:'Tema', color:'#b5523b'}, medio:{nombre:'Medio', color:'#2f6f8f'},
+  pais:{nombre:'País', color:'#4a5a4c'}, decada:{nombre:'Década de nacimiento', color:'#8a6d3b'},
+  fuente:{nombre:'Fuente', color:'#7b5aa6'}};
 const lista = (s, sep) => s ? s.split(sep).map(x => x.trim()).filter(Boolean) : [];
 const norm = s => s.normalize('NFD').replace(/[̀-ͯ]/g,'').toLowerCase();
 const esc = s => String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
@@ -153,8 +157,8 @@ function construir(rows){
   for (const a of artistas){
     for (const c of CATS){
       for (const v of c.val(a.r)){
-        const id = c.k + ':' + v;
-        if (!hubs.has(id)) hubs.set(id, {id, tipo:c.k, nombre:v, total:0});
+        const tipo = c.hub || c.k, id = tipo + ':' + v;
+        if (!hubs.has(id)) hubs.set(id, {id, tipo, nombre:v, total:0});
         hubs.get(id).total++;
         todosLinks.push({s:a, t:hubs.get(id), cat:c.k});
       }
@@ -164,11 +168,10 @@ function construir(rows){
   const todos = [...artistas, ...hubs.values()];
   todos.forEach((n, i) => { const a = i * 2.39996, r = 8 * Math.sqrt(i); n.x = Math.cos(a)*r; n.y = Math.sin(a)*r; });
   // conteos en los controles
-  const cont = Object.fromEntries(CATS.map(c => [c.k, 0]));
-  hubs.forEach(h => cont[h.tipo]++);
+  const cont = Object.fromEntries(CATS.map(c => [c.k, new Set(todosLinks.filter(l => l.cat === c.k).map(l => l.t)).size]));
   $('#cats').innerHTML = CATS.map(c => `
     <label class="cat"><input type="checkbox" data-k="${c.k}" ${c.on ? 'checked' : ''}>
-      <span class="punto" style="background:${c.color}"></span>${c.nombre}
+      <span class="punto" style="${c.linea ? `border-radius:2px;height:4px;width:16px;background:${c.color}` : `background:${c.color}`}"></span>${c.nombre}
       <span class="n">${cont[c.k]}</span></label>`).join('');
   $('#cats').addEventListener('change', e => { const c = CAT[e.target.dataset.k]; if (c){ c.on = e.target.checked; actualizar(true); } });
   $('#nombres').innerHTML = [...artistas.map(a => a.nombre), ...[...hubs.values()].map(h => h.nombre)]
@@ -186,7 +189,7 @@ function actualizar(recalentar){
     grado.set(l.t, (grado.get(l.t) || 0) + 1);
   }
   const hubOk = new Set([...grado].filter(([h, g]) => g >= umbral).map(([h]) => h));
-  links = todosLinks.filter(l => artOk.has(l.s) && hubOk.has(l.t)).map(l => ({source:l.s, target:l.t, cat:l.cat}));
+  links = todosLinks.filter(l => CAT[l.cat].on && artOk.has(l.s) && hubOk.has(l.t)).map(l => ({source:l.s, target:l.t, cat:l.cat}));
   const conectados = new Set(links.map(l => l.source));
   const artVis = [...artOk].filter(a => !aislar || conectados.has(a));
   hubOk.forEach(h => h.grado = grado.get(h));
@@ -219,7 +222,7 @@ function redimensionar(){
   canvas.width = W * DPR; canvas.height = H * DPR;
   dibujar();
 }
-function colorDe(n){ return n.tipo === 'artista' ? COLOR_ARTISTA : CAT[n.tipo].color; }
+function colorDe(n){ return n.tipo === 'artista' ? COLOR_ARTISTA : HUB[n.tipo].color; }
 
 function dibujar(){
   ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
@@ -301,7 +304,7 @@ canvas.addEventListener('mousemove', e => {
   if (n !== hover){ hover = n; dibujar(); }
   const tip = $('#tip');
   if (n){
-    tip.textContent = n.tipo === 'artista' ? n.nombre : `${n.nombre} · ${CAT[n.tipo].nombre.toLowerCase()} · ${n.grado} artistas`;
+    tip.textContent = n.tipo === 'artista' ? n.nombre : `${n.nombre} · ${HUB[n.tipo].nombre.toLowerCase()} · ${n.grado} artistas`;
     tip.style.display = 'block'; tip.style.left = (e.clientX + 12) + 'px'; tip.style.top = (e.clientY + 12) + 'px';
     canvas.style.cursor = 'pointer';
   } else { tip.style.display = 'none'; canvas.style.cursor = ''; }
@@ -324,9 +327,16 @@ function seleccionar(n, centrar){
       ${fila('Medios', r.medios)}${fila('Temas', r.temas)}${fila('Obra', r.obra_conocida)}${fila('Fuentes', r.fuentes)}</dl>
       <a href="index.html?q=${encodeURIComponent(n.nombre)}">Ver en la tabla →</a>`;
   } else {
-    const arts = [...vecinos.get(n)].sort((a, b) => b.nf - a.nf || a.nombre.localeCompare(b.nombre, 'es'));
-    d.innerHTML = `<h3>${esc(n.nombre)}</h3><div class="tipo">${CAT[n.tipo].nombre} · ${arts.length} artistas visibles${n.total !== arts.length ? ` (de ${n.total})` : ''}</div>
-      <ul>${arts.map(a => `<li><a data-id="${a.id}">${esc(a.nombre)}</a> <span class="n">${a.nf > 1 ? '· ' + a.nf + ' fuentes' : ''}</span></li>`).join('')}</ul>`;
+    const orden = (a, b) => b.nf - a.nf || a.nombre.localeCompare(b.nombre, 'es');
+    const item = a => `<li><a data-id="${a.id}">${esc(a.nombre)}</a> <span class="n">${a.nf > 1 ? '· ' + a.nf + ' fuentes' : ''}</span></li>`;
+    const arts = [...vecinos.get(n)].sort(orden);
+    let cuerpo;
+    if (n.tipo === 'pais'){
+      const por = k => links.filter(l => l.target === n && l.cat === k).map(l => l.source).sort(orden);
+      const secc = (k, titulo) => { const xs = por(k); return xs.length ? `<h2 style="color:${CAT[k].color}">${titulo} · ${xs.length}</h2><ul>${xs.map(item).join('')}</ul>` : ''; };
+      cuerpo = secc('nacimiento', 'Nacieron aquí') + secc('residencia', 'Viven aquí');
+    } else cuerpo = `<ul>${arts.map(item).join('')}</ul>`;
+    d.innerHTML = `<h3>${esc(n.nombre)}</h3><div class="tipo">${HUB[n.tipo].nombre} · ${arts.length} artistas visibles</div>${cuerpo}`;
   }
   $('#detalle').style.display = 'block';
   if (centrar) irA(n);
