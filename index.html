@@ -7,7 +7,7 @@
 <style>
   :root{
     --bg:#ffffff; --ink:#1a1a1a; --soft:#6b6b6b; --line:#e4e4e0; --alt:#f7f7f5;
-    --accent:#1f4e79; --accent-soft:#eaf1f8; --chip:#f1f1ee;
+    --accent:#1f4e79; --accent-soft:#eaf1f8; --chip:#f1f1ee; --falta:#b9b9b4;
   }
   *{box-sizing:border-box}
   html,body{margin:0;background:var(--bg);color:var(--ink);
@@ -17,7 +17,7 @@
   header p{margin:0;color:var(--soft);font-size:13px}
   .controls{display:flex;flex-wrap:wrap;gap:8px;align-items:center;padding:14px 24px;
     border-bottom:1px solid var(--line);position:sticky;top:0;background:var(--bg);z-index:5}
-  input[type=search],select{font:inherit;padding:7px 10px;border:1px solid var(--line);border-radius:6px;background:#fff;color:var(--ink)}
+  input[type=search],select{font:inherit;padding:7px 10px;border:1px solid var(--line);border-radius:6px;background:#fff;color:var(--ink);max-width:100%}
   input[type=search]{flex:1 1 240px;min-width:180px}
   button{font:inherit;padding:7px 12px;border:1px solid var(--line);border-radius:6px;background:#fff;cursor:pointer}
   button:hover{background:var(--alt)}
@@ -29,21 +29,20 @@
     cursor:pointer;user-select:none;white-space:nowrap;background:var(--bg)}
   th[aria-sort=ascending]::after{content:" ↑"} th[aria-sort=descending]::after{content:" ↓"}
   tbody tr.fila{cursor:pointer} tbody tr.fila:hover{background:var(--alt)}
-  td.n{font-variant-numeric:tabular-nums;width:1%;white-space:nowrap}
-  .barra{display:inline-flex;gap:2px;vertical-align:middle;margin-left:6px}
-  .barra i{width:6px;height:10px;border-radius:1px;background:var(--line)}
-  .barra i.on{background:var(--accent)}
-  .nombre{font-weight:600}
+  td.nombre{font-weight:600;min-width:150px}
+  td.anios{font-variant-numeric:tabular-nums;white-space:nowrap}
+  td.obra{font-style:italic;min-width:160px}
+  .falta{color:var(--falta)}
   .chip{display:inline-block;padding:1px 7px;margin:1px 3px 1px 0;border-radius:10px;font-size:12px;
     background:var(--chip);color:#333;white-space:nowrap}
-  .chip.tipo{background:var(--accent-soft);color:var(--accent)}
   tr.detalle td{background:var(--alt);padding:12px 24px}
   dl{display:grid;grid-template-columns:170px 1fr;gap:4px 16px;margin:0;max-width:900px}
   dt{color:var(--soft);font-size:12px} dd{margin:0}
+  a{color:var(--accent)}
   #aviso{padding:40px 24px;color:var(--soft);display:none}
   #aviso.on{display:block}
   footer{padding:18px 24px;color:var(--soft);font-size:12px;border-top:1px solid var(--line)}
-  @media (max-width:700px){
+  @media (max-width:800px){
     header,.controls{padding-left:16px;padding-right:16px}
     .opc{display:none} dl{grid-template-columns:1fr} dt{margin-top:6px}
   }
@@ -56,13 +55,10 @@
 </header>
 
 <div class="controls">
-  <input type="search" id="q" placeholder="Buscar artista, obra, tomo…" autocomplete="off">
+  <input type="search" id="q" placeholder="Buscar artista, obra, país, ciudad…" autocomplete="off">
+  <select id="f-pais"><option value="">Todos los países</option></select>
+  <select id="f-medio"><option value="">Todos los medios</option></select>
   <select id="f-fuente"><option value="">Todas las fuentes</option></select>
-  <select id="f-tipo"><option value="">Todos los dispositivos</option></select>
-  <select id="f-min">
-    <option value="1">1 fuente o más</option><option value="2">2 o más</option>
-    <option value="3">3 o más</option><option value="4">4 o más</option>
-  </select>
   <button id="b-limpiar" type="button">Limpiar</button>
   <button id="b-csv" type="button" title="Descargar la vista filtrada">Descargar vista</button>
   <button id="b-cargar" type="button" title="Abrir otra versión del CSV">Abrir CSV…</button>
@@ -74,9 +70,12 @@
   <table>
     <thead><tr>
       <th data-k="artista">Artista</th>
-      <th data-k="n_fuentes">Fuentes</th>
-      <th data-k="fuentes" class="opc">Dónde aparece</th>
-      <th data-k="tipos_de_dispositivo" class="opc">Tipo de dispositivo</th>
+      <th data-k="pais_nacimiento">País de nacimiento</th>
+      <th data-k="nacimiento">Años</th>
+      <th data-k="residencia" class="opc">Residencia</th>
+      <th data-k="medios">Medios</th>
+      <th data-k="obra_conocida" class="opc">Obra más conocida</th>
+      <th data-k="temas" class="opc">Temas</th>
     </tr></thead>
     <tbody id="tb"></tbody>
   </table>
@@ -84,22 +83,23 @@
 <div id="aviso"></div>
 
 <footer>
-  Haz clic en una fila para ver el detalle por fuente. Datos: <a href="artistas.csv">artistas.csv</a>.
+  Haz clic en una fila para ver fuentes y notas. País, años y residencia vienen de Wikidata; los medios combinan Wikidata y el tomo de Vitamin; la obra viene de ARTnews, Frieze o NYT y, si no, de Wikidata.
+  Datos: <a href="artistas.csv">artistas.csv</a>.
 </footer>
 
 <script>
 const CSV_URL = 'artistas.csv';
+const COLS = ['artista','pais_nacimiento','nacimiento','residencia','medios','obra_conocida','temas'];
 const DETALLE = [
-  ['vitamin','Vitamin (Phaidon)'], ['cream','Cream (Phaidon)'],
+  ['fuentes','Fuentes'], ['vitamin','Vitamin (Phaidon)'], ['cream','Cream (Phaidon)'],
   ['artnews_100','ARTnews · 100 obras del s. XXI'], ['frieze_25','Frieze · 25 obras'],
   ['nyt_25','NYT T Magazine · 25 obras'], ['turner','Turner Prize'],
   ['hugo_boss','Hugo Boss Prize'], ['duchamp','Prix Marcel Duchamp'],
-  ['latam','Latin American Artists (Phaidon)']
+  ['latam','Latin American Artists (Phaidon)'], ['obra_fuente','Fuente de la obra'], ['notas','Notas']
 ];
 let datos = [], vista = [], orden = {k:'n_fuentes', dir:-1}, abierta = null;
 const $ = s => document.querySelector(s);
 
-// Lector CSV (RFC 4180: comillas, comas y saltos de línea dentro de campos)
 function parseCSV(txt){
   txt = txt.replace(/^﻿/, '');
   const filas = []; let fila = [], campo = '', q = false;
@@ -121,38 +121,46 @@ function parseCSV(txt){
   const cab = filas.shift().map(h => h.trim());
   return filas.map(f => Object.fromEntries(cab.map((h, i) => [h, (f[i] || '').trim()])));
 }
-const partes = s => s ? s.split(' | ').map(x => x.trim()).filter(Boolean) : [];
+const lista = (s, sep) => s ? s.split(sep).map(x => x.trim()).filter(Boolean) : [];
 const norm = s => s.normalize('NFD').replace(/[̀-ͯ]/g,'').toLowerCase();
-const esc = s => s.replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const esc = s => String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const falta = '<span class="falta">—</span>';
 
 function cargar(registros, origen){
-  datos = registros.map(r => ({...r, n_fuentes: +r.n_fuentes || 0,
-    _txt: norm(Object.values(r).join(' '))}));
-  const fuentes = new Set(), tipos = new Set();
-  datos.forEach(r => { partes(r.fuentes).forEach(x => fuentes.add(x)); partes(r.tipos_de_dispositivo).forEach(x => tipos.add(x)); });
+  datos = registros.map(r => ({...r, n_fuentes: +r.n_fuentes || 0, _txt: norm(Object.values(r).join(' '))}));
+  const paises = new Set(), medios = new Set(), fuentes = new Set();
+  datos.forEach(r => {
+    if (r.pais_nacimiento) paises.add(r.pais_nacimiento);
+    lista(r.medios, ',').forEach(m => medios.add(m));
+    lista(r.fuentes, ' | ').forEach(f => fuentes.add(f));
+  });
+  llenar('#f-pais', 'Todos los países', paises);
+  llenar('#f-medio', 'Todos los medios', medios);
   llenar('#f-fuente', 'Todas las fuentes', fuentes);
-  llenar('#f-tipo', 'Todos los dispositivos', tipos);
-  $('#sub').textContent = `${datos.length.toLocaleString('es')} artistas · ${fuentes.size} fuentes · ${origen}`;
+  const conPais = datos.filter(r => r.pais_nacimiento).length;
+  $('#sub').textContent = `${datos.length.toLocaleString('es')} artistas · ${paises.size} países · ${conPais.toLocaleString('es')} con datos biográficos`;
   $('#aviso').classList.remove('on');
   aplicar();
 }
 function llenar(sel, primero, set){
-  const el = $(sel);
-  el.innerHTML = `<option value="">${primero}</option>` +
+  $(sel).innerHTML = `<option value="">${primero}</option>` +
     [...set].sort((a,b)=>a.localeCompare(b,'es')).map(v => `<option>${esc(v)}</option>`).join('');
 }
 
 function aplicar(){
-  const q = norm($('#q').value.trim()), ff = $('#f-fuente').value, ft = $('#f-tipo').value, mn = +$('#f-min').value;
+  const q = norm($('#q').value.trim()), fp = $('#f-pais').value, fm = $('#f-medio').value, ff = $('#f-fuente').value;
   vista = datos.filter(r =>
-    r.n_fuentes >= mn &&
-    (!ff || partes(r.fuentes).includes(ff)) &&
-    (!ft || partes(r.tipos_de_dispositivo).includes(ft)) &&
+    (!fp || r.pais_nacimiento === fp) &&
+    (!fm || lista(r.medios, ',').includes(fm)) &&
+    (!ff || lista(r.fuentes, ' | ').includes(ff)) &&
     (!q || q.split(/\s+/).every(t => r._txt.includes(t))));
   const {k, dir} = orden;
   vista.sort((a,b) => {
-    const va = a[k], vb = b[k];
-    const c = typeof va === 'number' ? va - vb : String(va).localeCompare(String(vb), 'es', {sensitivity:'base'});
+    let va = a[k], vb = b[k];
+    if (va === '' && vb !== '') return 1;          // vacíos siempre al final
+    if (vb === '' && va !== '') return -1;
+    const c = (typeof va === 'number' || /^\d+$/.test(va)) && (typeof vb === 'number' || /^\d+$/.test(vb))
+      ? (+va) - (+vb) : String(va).localeCompare(String(vb), 'es', {sensitivity:'base'});
     return c * dir || a.artista.localeCompare(b.artista, 'es');
   });
   document.querySelectorAll('th').forEach(th =>
@@ -161,15 +169,20 @@ function aplicar(){
   pintar();
 }
 
+function anios(r){
+  if (!r.nacimiento) return falta;
+  return r.muerte ? `${r.nacimiento}–${r.muerte}` : `${r.nacimiento}`;
+}
 function pintar(){
-  const max = Math.max(5, ...datos.map(r => r.n_fuentes));
   $('#tb').innerHTML = vista.map((r, i) => `
     <tr class="fila" data-i="${i}">
       <td class="nombre">${esc(r.artista)}</td>
-      <td class="n">${r.n_fuentes}<span class="barra" aria-hidden="true">${
-        Array.from({length:max}, (_, j) => `<i class="${j < r.n_fuentes ? 'on' : ''}"></i>`).join('')}</span></td>
-      <td class="opc">${partes(r.fuentes).map(x => `<span class="chip">${esc(x)}</span>`).join('')}</td>
-      <td class="opc">${partes(r.tipos_de_dispositivo).map(x => `<span class="chip tipo">${esc(x)}</span>`).join('')}</td>
+      <td>${r.pais_nacimiento ? esc(r.pais_nacimiento) : falta}</td>
+      <td class="anios">${anios(r)}</td>
+      <td class="opc">${r.residencia ? esc(r.residencia) : falta}</td>
+      <td>${lista(r.medios, ',').map(m => `<span class="chip">${esc(m)}</span>`).join('') || falta}</td>
+      <td class="opc obra">${r.obra_conocida ? esc(r.obra_conocida) : falta}</td>
+      <td class="opc">${r.temas ? lista(r.temas, ',').map(t => `<span class="chip">${esc(t)}</span>`).join('') : falta}</td>
     </tr>`).join('');
   $('#contador').textContent = `${vista.length.toLocaleString('es')} de ${datos.length.toLocaleString('es')}`;
   const av = $('#aviso');
@@ -184,20 +197,21 @@ $('#tb').addEventListener('click', e => {
   if (abierta === i){ abierta = null; return; }
   abierta = i;
   const r = vista[i];
-  const filas = DETALLE.filter(([k]) => r[k]).map(([k, et]) =>
-    `<dt>${et}</dt><dd>${partes(r[k]).map(esc).join('<br>')}</dd>`).join('');
-  tr.insertAdjacentHTML('afterend',
-    `<tr class="detalle"><td colspan="4"><dl>${filas || '<dt>Sin detalle</dt><dd></dd>'}</dl></td></tr>`);
+  let filas = DETALLE.filter(([k]) => r[k]).map(([k, et]) =>
+    `<dt>${et}</dt><dd>${lista(r[k], ' | ').map(esc).join('<br>')}</dd>`).join('');
+  if (r.wikidata) filas += `<dt>Wikidata</dt><dd><a href="https://www.wikidata.org/wiki/${encodeURIComponent(r.wikidata)}" target="_blank" rel="noopener">${esc(r.wikidata)}</a></dd>`;
+  tr.insertAdjacentHTML('afterend', `<tr class="detalle"><td colspan="7"><dl>${filas}</dl></td></tr>`);
 });
 
 document.querySelectorAll('th').forEach(th => th.addEventListener('click', () => {
   const k = th.dataset.k;
-  orden = orden.k === k ? {k, dir: -orden.dir} : {k, dir: k === 'n_fuentes' ? -1 : 1};
+  orden = orden.k === k ? {k, dir: -orden.dir} : {k, dir: 1};
   aplicar();
 }));
-['#q','#f-fuente','#f-tipo','#f-min'].forEach(s => $(s).addEventListener('input', aplicar));
+['#q','#f-pais','#f-medio','#f-fuente'].forEach(s => $(s).addEventListener('input', aplicar));
 $('#b-limpiar').addEventListener('click', () => {
-  $('#q').value = ''; $('#f-fuente').value = ''; $('#f-tipo').value = ''; $('#f-min').value = '1'; aplicar();
+  ['#q','#f-pais','#f-medio','#f-fuente'].forEach(s => $(s).value = '');
+  orden = {k:'n_fuentes', dir:-1}; aplicar();
 });
 $('#b-cargar').addEventListener('click', () => $('#archivo').click());
 $('#archivo').addEventListener('change', e => {
