@@ -1,0 +1,382 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Mapa de artistas</title>
+<style>
+  :root{
+    --bg:#ffffff; --ink:#1a1a1a; --soft:#6b6b6b; --faint:#9a9a95; --line:#e4e4e0; --alt:#f6f6f3;
+    --accent:#1f4e79; --nac:#3f8a4a; --res:#e0701f; --tema:#b5523b;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;background:var(--bg);color:var(--ink);
+    font:14px/1.45 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif}
+  body{display:flex;flex-direction:column;height:100vh;height:100dvh;overflow:hidden}
+  a{color:var(--accent)}
+  header{padding:18px 24px 12px;border-bottom:1px solid var(--line);display:flex;gap:16px;align-items:flex-end;justify-content:space-between;flex-wrap:wrap}
+  h1{margin:0 0 3px;font-size:21px;font-weight:600;letter-spacing:-.01em}
+  header p{margin:0;color:var(--soft);font-size:13px;max-width:760px}
+  nav.vistas{display:flex;gap:2px;flex-wrap:wrap;background:var(--alt);border:1px solid var(--line);border-radius:8px;padding:3px}
+  nav.vistas a{font-size:13px;text-decoration:none;color:var(--soft);padding:5px 11px;border-radius:6px;white-space:nowrap}
+  nav.vistas a:hover{color:var(--ink);background:#fff}
+  nav.vistas a[aria-current]{background:#fff;color:var(--ink);font-weight:600;box-shadow:0 1px 3px rgba(0,0,0,.08)}
+  .controles{display:flex;flex-wrap:wrap;gap:8px 16px;align-items:center;padding:10px 24px;border-bottom:1px solid var(--line);font-size:13px}
+  .grupo{display:flex;align-items:center;gap:6px}
+  .grupo > span{color:var(--soft)}
+  .seg{display:inline-flex;border:1px solid var(--line);border-radius:7px;overflow:hidden}
+  .seg button{border:none;border-radius:0;padding:5px 10px;background:#fff;font:inherit;font-size:13px;cursor:pointer;color:var(--soft)}
+  .seg button + button{border-left:1px solid var(--line)}
+  .seg button:hover{background:var(--alt);color:var(--ink)}
+  .seg button[aria-pressed=true]{background:var(--ink);color:#fff}
+  select,input[type=search]{font:inherit;font-size:13px;padding:5px 8px;border:1px solid var(--line);border-radius:7px;background:#fff;color:var(--ink);max-width:100%}
+  input[type=range]{accent-color:var(--accent);width:110px}
+  output{font-variant-numeric:tabular-nums;min-width:20px;display:inline-block}
+  label.chk{display:flex;align-items:center;gap:6px;cursor:pointer}
+  .resumen{margin-left:auto;color:var(--soft);font-size:12.5px}
+  .resumen b{color:var(--ink);font-weight:600}
+  main{flex:1;min-height:0;display:flex;position:relative}
+  .lienzo{flex:1;min-width:0;overflow:auto;position:relative}
+  aside.lista{width:330px;flex:none;border-left:1px solid var(--line);overflow:auto;padding:16px 18px;display:none;position:relative;background:#fff}
+  aside.lista.abierta{display:block}
+  aside.lista h3{margin:0 28px 2px 0;font-size:16px;line-height:1.3}
+  aside.lista .meta{color:var(--soft);font-size:12.5px;margin-bottom:12px}
+  aside.lista h4{font-size:10.5px;text-transform:uppercase;letter-spacing:.07em;color:var(--soft);margin:14px 0 6px;font-weight:650}
+  aside.lista ul{list-style:none;margin:0;padding:0;font-size:13px}
+  aside.lista li{padding:4px 0;border-bottom:1px solid var(--alt);display:flex;gap:8px;align-items:baseline}
+  aside.lista li a{text-decoration:none;font-weight:550}
+  aside.lista li a:hover{text-decoration:underline}
+  aside.lista li .det{color:var(--soft);font-size:12px;margin-left:auto;text-align:right}
+  .cerrar{position:absolute;top:10px;right:10px;border:none;background:none;font-size:20px;line-height:1;color:var(--soft);padding:2px 8px;cursor:pointer;border-radius:6px}
+  .cerrar:hover{background:var(--alt)}
+  .tip{position:fixed;pointer-events:none;background:#1a1a1a;color:#fff;font-size:12px;line-height:1.4;padding:6px 9px;border-radius:6px;display:none;z-index:20;max-width:300px}
+  .tip b{font-weight:600}
+  .pie{color:var(--soft);font-size:12px;padding:8px 24px 10px;border-top:1px solid var(--line);line-height:1.5}
+  details.pie summary{cursor:pointer;color:var(--ink);font-weight:550;width:max-content}
+  details.pie[open] summary{margin-bottom:4px}
+  .cargando{padding:40px 24px;color:var(--soft)}
+  .leyenda{display:flex;flex-wrap:wrap;gap:4px 14px;font-size:12px;color:var(--soft)}
+  .leyenda i{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:5px;vertical-align:-1px}
+  @media (max-width:760px){
+    header,.controles{padding-left:16px;padding-right:16px}
+    .pie{padding-left:16px;padding-right:16px}
+    .resumen{margin-left:0;width:100%}
+    aside.lista{position:absolute;inset:auto 0 0 0;width:auto;max-height:55%;border-left:none;border-top:1px solid var(--line);box-shadow:0 -6px 20px rgba(0,0,0,.08);z-index:10}
+  }
+
+  .lienzo{overflow:hidden}
+  svg{display:block;width:100%;height:100%;cursor:grab;touch-action:none}
+  svg:active{cursor:grabbing}
+  .pais{fill:#ecece8;stroke:#fff;stroke-linejoin:round}
+  .pais.con{fill:#e2e2dc}
+  .pais.sel{fill:#d2d2ca}
+  .esfera{fill:#fbfbf9;stroke:var(--line)}
+  .circ{cursor:pointer;stroke:#fff}
+  .circ.sel{stroke:var(--ink)}
+  .etq{font-size:11.5px;fill:var(--ink);pointer-events:none;paint-order:stroke;stroke:#fff;stroke-width:3px;stroke-linejoin:round;font-weight:550}
+  .etq .n{fill:var(--soft);font-weight:400}
+  #zoom{position:absolute;right:14px;bottom:14px;display:flex;flex-direction:column;gap:6px}
+  #zoom button{width:34px;height:34px;padding:0;font-size:16px;border:1px solid var(--line);border-radius:7px;background:#fff;cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,.06)}
+  #zoom button:hover{background:var(--alt)}
+  #ranking{position:absolute;left:14px;bottom:14px;width:250px;background:rgba(255,255,255,.95);border:1px solid var(--line);border-radius:10px;padding:10px 12px;font-size:12.5px;box-shadow:0 2px 10px rgba(0,0,0,.05)}
+  #ranking h4{margin:0 0 6px;font-size:10.5px;text-transform:uppercase;letter-spacing:.07em;color:var(--soft);font-weight:650;display:flex;justify-content:space-between;cursor:pointer}
+  #ranking.plegado ol{display:none}
+  #ranking ol{list-style:none;margin:0;padding:0}
+  #ranking li{display:grid;grid-template-columns:92px 1fr 30px;gap:6px;align-items:center;padding:1.5px 0;cursor:pointer}
+  #ranking li:hover span{text-decoration:underline}
+  #ranking li span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  #ranking li i{display:block;height:7px;border-radius:2px}
+  #ranking li b{font-weight:500;text-align:right;font-variant-numeric:tabular-nums;color:var(--soft)}
+  #escala{position:absolute;right:62px;bottom:14px;background:rgba(255,255,255,.9);border:1px solid var(--line);border-radius:10px;padding:8px 12px;font-size:12px;color:var(--soft)}
+  #escala svg{width:auto;height:auto;cursor:default}
+  @media (max-width:760px){ #ranking{width:200px;font-size:12px} #ranking li{grid-template-columns:70px 1fr 26px} #escala{display:none} }
+</style>
+</head>
+<body>
+<header>
+  <div>
+    <h1>Mapa: de dónde vienen y dónde trabajan</h1>
+    <p>El tamaño del círculo es proporcional al número de artistas. Arrastra para mover, usa la rueda o los botones para acercar y haz clic en un círculo para ver los nombres.</p>
+  </div>
+  <nav class="vistas" aria-label="Vistas"><a href="index.html">Tabla</a><a href="grafo.html">Red</a><a href="flujos.html">Flujos</a><a href="mapa.html" aria-current="page">Mapa</a><a href="temas.html">Temas</a></nav>
+</header>
+<div class="controles">
+  <div class="grupo"><span>Mostrar</span>
+    <div class="seg" id="modo">
+      <button data-v="nac" aria-pressed="true">Nacimiento</button><button data-v="res" aria-pressed="false">Residencia</button><button data-v="saldo" aria-pressed="false">Saldo</button>
+    </div></div>
+  <div class="grupo"><select id="fuente" aria-label="Fuente"></select></div>
+  <label class="chk"><input type="checkbox" id="etiquetas" checked> Etiquetas</label>
+  <div class="resumen" id="resumen"></div>
+</div>
+<main>
+  <div class="lienzo" id="lienzo">
+    <div class="cargando" id="cargando">Cargando mapa…</div>
+    <div id="ranking"><h4><span id="ranking-t">Principales países</span><span id="ranking-p">−</span></h4><ol></ol></div>
+    <div id="escala"></div>
+    <div id="zoom"><button type="button" id="z-mas" aria-label="Acercar">+</button><button type="button" id="z-menos" aria-label="Alejar">−</button><button type="button" id="z-todo" aria-label="Ver todo">⤢</button></div>
+  </div>
+  <aside class="lista"></aside>
+</main>
+<details class="pie"><summary>Cómo leerlo</summary><b>Nacimiento</b> cuenta a cada artista en su país de nacimiento (si Wikidata da dos, el primero). <b>Residencia</b> cuenta a cada artista en cada país donde vive o trabaja, así que quien reside en dos países aparece en ambos. <b>Saldo</b> usa solo a quienes tienen ambos datos: para cada país resta los que nacieron allí y viven fuera de los que viven allí habiendo nacido en otro lugar. Azul indica que el país gana artistas; rojo, que los pierde. Los círculos se ubican en el centro del territorio principal de cada país. Cobertura: <span id="cob">…</span>.</details>
+
+<script src="https://cdn.jsdelivr.net/npm/d3@7.9.0/dist/d3.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/topojson-client@3.1.0/dist/topojson-client.min.js"></script>
+<script>
+// ---------- común a las vistas ----------
+const $ = s => document.querySelector(s);
+const PAISES = {"Estados Unidos": ["United States of America", "Norteamérica"], "Canadá": ["Canada", "Norteamérica"], "Reino Unido": ["United Kingdom", "Europa occidental y del norte"], "Reino de Escocia": ["United Kingdom", "Europa occidental y del norte"], "Isla de Man": ["Isle of Man", "Europa occidental y del norte"], "Irlanda": ["Ireland", "Europa occidental y del norte"], "Islandia": ["Iceland", "Europa occidental y del norte"], "Suecia": ["Sweden", "Europa occidental y del norte"], "Dinamarca": ["Denmark", "Europa occidental y del norte"], "Noruega": ["Norway", "Europa occidental y del norte"], "Finlandia": ["Finland", "Europa occidental y del norte"], "Estonia": ["Estonia", "Europa occidental y del norte"], "Lituania": ["Lithuania", "Europa occidental y del norte"], "Alemania": ["Germany", "Europa occidental y del norte"], "Francia": ["France", "Europa occidental y del norte"], "Suiza": ["Switzerland", "Europa occidental y del norte"], "Bélgica": ["Belgium", "Europa occidental y del norte"], "Países Bajos": ["Netherlands", "Europa occidental y del norte"], "Austria": ["Austria", "Europa occidental y del norte"], "Mónaco": ["Monaco", "Europa occidental y del norte"], "Italia": ["Italy", "Europa del sur"], "España": ["Spain", "Europa del sur"], "Portugal": ["Portugal", "Europa del sur"], "Grecia": ["Greece", "Europa del sur"], "Eslovenia": ["Slovenia", "Europa del sur"], "Croacia": ["Croatia", "Europa del sur"], "Serbia": ["Serbia", "Europa del sur"], "Bosnia y Herzegovina": ["Bosnia and Herz.", "Europa del sur"], "Albania": ["Albania", "Europa del sur"], "Polonia": ["Poland", "Europa del este"], "República Checa": ["Czechia", "Europa del este"], "Eslovaquia": ["Slovakia", "Europa del este"], "Hungría": ["Hungary", "Europa del este"], "Rumania": ["Romania", "Europa del este"], "Bulgaria": ["Bulgaria", "Europa del este"], "Moldavia": ["Moldova", "Europa del este"], "Ucrania": ["Ukraine", "Europa del este"], "Rusia": ["Russia", "Europa del este"], "Brasil": ["Brazil", "América Latina y el Caribe"], "México": ["Mexico", "América Latina y el Caribe"], "Argentina": ["Argentina", "América Latina y el Caribe"], "Colombia": ["Colombia", "América Latina y el Caribe"], "Cuba": ["Cuba", "América Latina y el Caribe"], "Chile": ["Chile", "América Latina y el Caribe"], "Perú": ["Peru", "América Latina y el Caribe"], "Venezuela": ["Venezuela", "América Latina y el Caribe"], "Guatemala": ["Guatemala", "América Latina y el Caribe"], "República Dominicana": ["Dominican Rep.", "América Latina y el Caribe"], "Uruguay": ["Uruguay", "América Latina y el Caribe"], "Costa Rica": ["Costa Rica", "América Latina y el Caribe"], "El Salvador": ["El Salvador", "América Latina y el Caribe"], "Ecuador": ["Ecuador", "América Latina y el Caribe"], "Paraguay": ["Paraguay", "América Latina y el Caribe"], "Panamá": ["Panama", "América Latina y el Caribe"], "Bolivia": ["Bolivia", "América Latina y el Caribe"], "Nicaragua": ["Nicaragua", "América Latina y el Caribe"], "Bahamas": ["Bahamas", "América Latina y el Caribe"], "Puerto Rico": ["Puerto Rico", "América Latina y el Caribe"], "Honduras": ["Honduras", "América Latina y el Caribe"], "Barbados": ["Barbados", "América Latina y el Caribe"], "Curazao": ["Curaçao", "América Latina y el Caribe"], "Guyana": ["Guyana", "América Latina y el Caribe"], "Montserrat": ["Montserrat", "América Latina y el Caribe"], "Trinidad y Tobago": ["Trinidad and Tobago", "América Latina y el Caribe"], "Sudáfrica": ["South Africa", "África subsahariana"], "Nigeria": ["Nigeria", "África subsahariana"], "Ghana": ["Ghana", "África subsahariana"], "Kenia": ["Kenya", "África subsahariana"], "Etiopía": ["Ethiopia", "África subsahariana"], "Malaui": ["Malawi", "África subsahariana"], "Tanzania": ["Tanzania", "África subsahariana"], "Mali": ["Mali", "África subsahariana"], "Malí": ["Mali", "África subsahariana"], "Camerún": ["Cameroon", "África subsahariana"], "Botsuana": ["Botswana", "África subsahariana"], "Uganda": ["Uganda", "África subsahariana"], "Marruecos": ["Morocco", "Norte de África y Asia occidental"], "Argelia": ["Algeria", "Norte de África y Asia occidental"], "Egipto": ["Egypt", "Norte de África y Asia occidental"], "Turquía": ["Turkey", "Norte de África y Asia occidental"], "Israel": ["Israel", "Norte de África y Asia occidental"], "Líbano": ["Lebanon", "Norte de África y Asia occidental"], "Irak": ["Iraq", "Norte de África y Asia occidental"], "Georgia": ["Georgia", "Norte de África y Asia occidental"], "Palestina": ["Palestine", "Norte de África y Asia occidental"], "Jordania": ["Jordan", "Norte de África y Asia occidental"], "Siria": ["Syria", "Norte de África y Asia occidental"], "Arabia Saudí": ["Saudi Arabia", "Norte de África y Asia occidental"], "Emiratos Árabes Unidos": ["United Arab Emirates", "Norte de África y Asia occidental"], "India": ["India", "Asia central y meridional"], "Pakistán": ["Pakistan", "Asia central y meridional"], "Irán": ["Iran", "Asia central y meridional"], "Afganistán": ["Afghanistan", "Asia central y meridional"], "Bangladés": ["Bangladesh", "Asia central y meridional"], "Tayikistán": ["Tajikistan", "Asia central y meridional"], "República Popular China": ["China", "Asia oriental"], "Japón": ["Japan", "Asia oriental"], "Corea del Sur": ["South Korea", "Asia oriental"], "Taiwán": ["Taiwan", "Asia oriental"], "Hong Kong": ["Hong Kong", "Asia oriental"], "Tailandia": ["Thailand", "Sudeste asiático"], "Indonesia": ["Indonesia", "Sudeste asiático"], "Filipinas": ["Philippines", "Sudeste asiático"], "Vietnam": ["Vietnam", "Sudeste asiático"], "Singapur": ["Singapore", "Sudeste asiático"], "Laos": ["Laos", "Sudeste asiático"], "Malasia": ["Malaysia", "Sudeste asiático"], "Australia": ["Australia", "Oceanía"], "Nueva Zelanda": ["New Zealand", "Oceanía"], "Vanuatu": ["Vanuatu", "Oceanía"]};           // nombre es -> [nombre en world-atlas, región]
+const ALIAS_PAIS = {'EE.UU.':'Estados Unidos','Reino de Escocia':'Reino Unido','Malí':'Mali'};
+const REGIONES = ["Norteamérica", "América Latina y el Caribe", "Europa occidental y del norte", "Europa del sur", "Europa del este", "África subsahariana", "Norte de África y Asia occidental", "Asia central y meridional", "Asia oriental", "Sudeste asiático", "Oceanía"];       // orden fijo de regiones
+const COLOR_REGION = Object.fromEntries(REGIONES.map((r, i) => [r,
+  ['#4e79a7','#e15759','#59a14f','#b07aa1','#499894','#f28e2b','#e5c13a','#9c755f','#7a4fa3','#d37295','#b6992d'][i]]));
+const FUENTES = ['Vitamin','Cream','Latin American Artists','Turner Prize','Prix Marcel Duchamp','ARTnews 100','Hugo Boss Prize','Frieze 25','NYT T 25'];
+
+function parseCSV(txt){
+  txt = txt.replace(/^﻿/, '');
+  const filas = []; let fila = [], campo = '', q = false;
+  for (let i = 0; i < txt.length; i++){
+    const c = txt[i];
+    if (q){ if (c === '"'){ if (txt[i+1] === '"'){ campo += '"'; i++; } else q = false; } else campo += c; }
+    else if (c === '"') q = true;
+    else if (c === ','){ fila.push(campo); campo = ''; }
+    else if (c === '\n' || c === '\r'){
+      if (c === '\r' && txt[i+1] === '\n') i++;
+      fila.push(campo); campo = '';
+      if (fila.some(v => v !== '')) filas.push(fila);
+      fila = [];
+    } else campo += c;
+  }
+  if (campo !== '' || fila.length){ fila.push(campo); if (fila.some(v => v !== '')) filas.push(fila); }
+  const cab = filas.shift().map(h => h.trim());
+  return filas.map(f => Object.fromEntries(cab.map((h, i) => [h, (f[i] || '').trim()])));
+}
+const lista = (s, sep) => (s || '').split(sep).map(x => x.trim()).filter(Boolean);
+const normPais = p => { p = ALIAS_PAIS[p] || p; return PAISES[p] ? p : null; };
+// País de nacimiento: si Wikidata dio dos («Puerto Rico / EE.UU.»), se usa el primero.
+const paisNac = r => normPais(lista(r.pais_nacimiento, '/')[0] || '');
+const paisesRes = r => [...new Set(lista(r.pais_residencia, ';').map(normPais).filter(Boolean))];
+const region = p => p && PAISES[p] ? PAISES[p][1] : null;
+const fuentesDe = r => lista(r.fuentes, '|');
+const fmt = n => n.toLocaleString('es-PE');
+const esc = s => String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const enlaceTabla = nombre => `index.html?q=${encodeURIComponent(nombre)}`;
+
+function cargarCSV(){
+  return fetch('artistas.csv').then(r => { if (!r.ok) throw new Error('No se pudo leer artistas.csv'); return r.text(); }).then(parseCSV);
+}
+function selectorFuentes(sel){
+  sel.innerHTML = '<option value="">Todas las fuentes</option>' + FUENTES.map(f => `<option>${f}</option>`).join('');
+}
+function segmentado(cont, alCambiar){
+  cont.addEventListener('click', e => {
+    const b = e.target.closest('button'); if (!b) return;
+    cont.querySelectorAll('button').forEach(x => x.setAttribute('aria-pressed', x === b));
+    alCambiar(b.dataset.v);
+  });
+}
+const valorSeg = cont => cont.querySelector('[aria-pressed=true]').dataset.v;
+
+// Panel lateral con la lista de artistas
+function abrirLista(titulo, meta, secciones){
+  const a = $('aside.lista');
+  a.innerHTML = `<button class="cerrar" type="button" aria-label="Cerrar">×</button><h3>${esc(titulo)}</h3><div class="meta">${meta}</div>` +
+    secciones.filter(s => s.items.length).map(s => `<h4>${esc(s.titulo)} · ${s.items.length}</h4><ul>` +
+      s.items.map(it => `<li><a href="${enlaceTabla(it.nombre)}" target="_blank">${esc(it.nombre)}</a><span class="det">${esc(it.det || '')}</span></li>`).join('') + '</ul>').join('');
+  a.classList.add('abierta');
+  a.scrollTop = 0;
+  a.querySelector('.cerrar').onclick = cerrarLista;
+}
+function cerrarLista(){ $('aside.lista').classList.remove('abierta'); if (window.alCerrarLista) window.alCerrarLista(); }
+document.addEventListener('keydown', e => { if (e.key === 'Escape') cerrarLista(); });
+
+const tip = document.createElement('div'); tip.className = 'tip'; document.body.appendChild(tip);
+function mostrarTip(html, ev){
+  tip.innerHTML = html; tip.style.display = 'block';
+  const w = tip.offsetWidth, h = tip.offsetHeight;
+  let x = ev.clientX + 14, y = ev.clientY + 14;
+  if (x + w > innerWidth - 8) x = ev.clientX - w - 14;
+  if (y + h > innerHeight - 8) y = ev.clientY - h - 14;
+  tip.style.left = x + 'px'; tip.style.top = y + 'px';
+}
+const ocultarTip = () => { tip.style.display = 'none'; };
+
+// ---------- mapa ----------
+const COLOR = {nac:'#3f8a4a', res:'#e0701f', gana:'#2f6f8f', pierde:'#b5523b'};
+let A = [], geo = null, centro = new Map(), featPorNombre = new Map(), selPais = null;
+let W = 0, H = 0, k = 1;
+const svg = d3.select('#lienzo').append('svg').lower();
+const gMapa = svg.append('g'), gPaises = gMapa.append('g'), gCirc = gMapa.append('g'), gEtq = gMapa.append('g');
+const proy = d3.geoEqualEarth(), ruta = d3.geoPath(proy);
+const zoom = d3.zoom().scaleExtent([1, 14]).on('zoom', e => {
+  k = e.transform.k; gMapa.attr('transform', e.transform); ajustarEscala();
+});
+svg.call(zoom).on('dblclick.zoom', null);
+svg.on('click', e => { if (e.target.tagName === 'svg' || e.target.classList.contains('esfera')) cerrarLista(); });
+$('#z-mas').onclick = () => svg.transition().duration(300).call(zoom.scaleBy, 1.6);
+$('#z-menos').onclick = () => svg.transition().duration(300).call(zoom.scaleBy, 1 / 1.6);
+$('#z-todo').onclick = () => svg.transition().duration(400).call(zoom.transform, d3.zoomIdentity);
+$('#ranking h4').onclick = () => { $('#ranking').classList.toggle('plegado'); $('#ranking-p').textContent = $('#ranking').classList.contains('plegado') ? '+' : '−'; };
+if (innerWidth < 760){ $('#ranking').classList.add('plegado'); $('#ranking-p').textContent = '+'; }
+selectorFuentes($('#fuente'));
+segmentado($('#modo'), () => actualizar());
+$('#fuente').onchange = () => actualizar();
+$('#etiquetas').onchange = () => actualizar();
+window.alCerrarLista = () => { selPais = null; marcarSel(); };
+
+Promise.all([cargarCSV(), fetch('https://cdn.jsdelivr.net/npm/world-atlas@2.0.2/countries-50m.json').then(r => r.json())])
+  .then(([rows, topo]) => {
+    A = rows.map(r => ({nombre:r.artista, nac:paisNac(r), res:paisesRes(r), f:fuentesDe(r), r}));
+    $('#cob').textContent = `país de nacimiento para ${fmt(A.filter(a => a.nac).length)} de ${fmt(A.length)} artistas; residencia para ${fmt(A.filter(a => a.res.length).length)}`;
+    geo = topojson.feature(topo, topo.objects.countries);
+    geo.features = geo.features.filter(f => f.id !== '010');   // sin Antártida
+    geo.features.forEach(f => featPorNombre.set(f.properties.name, f));
+    $('#cargando').remove();
+    dimensionar();
+    new ResizeObserver(() => { dimensionar(); }).observe($('#lienzo'));
+  })
+  .catch(e => { $('#cargando').textContent = 'No se pudo cargar: ' + e.message; });
+
+// centro del polígono más grande (evita que Alaska o la Guayana Francesa desplacen el punto)
+function centroDe(f){
+  if (f.geometry.type !== 'MultiPolygon') return d3.geoCentroid(f);
+  let mejor = null, area = -1;
+  for (const coords of f.geometry.coordinates){
+    const pol = {type:'Polygon', coordinates:coords}, a = d3.geoArea(pol);
+    if (a > area){ area = a; mejor = pol; }
+  }
+  return d3.geoCentroid(mejor);
+}
+
+function dimensionar(){
+  const el = $('#lienzo'); W = el.clientWidth; H = el.clientHeight;
+  if (!geo || !W || !H) return;
+  svg.attr('viewBox', `0 0 ${W} ${H}`);
+  proy.fitExtent([[10, 10], [W - 10, H - 10]], {type:'Sphere'});
+  zoom.extent([[0, 0], [W, H]]).translateExtent([[-W * .2, -H * .2], [W * 1.2, H * 1.2]]);
+  for (const nombre in PAISES){ const f = featPorNombre.get(PAISES[nombre][0]); if (f) centro.set(nombre, proy(centroDe(f))); }
+  gPaises.selectAll('*').remove();
+  gPaises.append('path').attr('class', 'esfera').attr('d', ruta({type:'Sphere'}));
+  gPaises.selectAll('path.pais').data(geo.features).join('path').attr('class', 'pais').attr('d', ruta)
+    .on('click', (e, f) => { const n = nombrePorAtlas(f.properties.name); if (n && conteo.has(n)) seleccionar(n); });
+  actualizar();
+}
+const nombrePorAtlas = an => Object.keys(PAISES).find(n => PAISES[n][0] === an && !ALIAS_PAIS[n]);
+
+let conteo = new Map(), modo = 'nac', radios = new Map();
+function calcular(){
+  modo = valorSeg($('#modo'));
+  const fuente = $('#fuente').value;
+  const base = A.filter(a => !fuente || a.f.includes(fuente));
+  const m = new Map(); const g = p => m.get(p) || m.set(p, {nac:[], res:[], llegan:[], salen:[]}).get(p);
+  for (const a of base){
+    if (a.nac) g(a.nac).nac.push(a);
+    a.res.forEach(p => g(p).res.push(a));
+    if (a.nac && a.res.length){
+      if (!a.res.includes(a.nac)) g(a.nac).salen.push(a);
+      a.res.filter(p => p !== a.nac).forEach(p => g(p).llegan.push(a));
+    }
+  }
+  for (const [p, d] of m){
+    d.valor = modo === 'nac' ? d.nac.length : modo === 'res' ? d.res.length : d.llegan.length - d.salen.length;
+    if (!d.valor) m.delete(p);
+  }
+  conteo = m;
+  const nBase = modo === 'nac' ? base.filter(a => a.nac).length : modo === 'res' ? base.filter(a => a.res.length).length : base.filter(a => a.nac && a.res.length).length;
+  return {base, nBase};
+}
+
+function actualizar(){
+  if (!geo || !W) return;
+  const {nBase} = calcular();
+  const datos = [...conteo].map(([p, d]) => ({p, d, v:d.valor, xy:centro.get(p)})).filter(x => x.xy).sort((a, b) => Math.abs(b.v) - Math.abs(a.v));
+  const max = d3.max(datos, x => Math.abs(x.v)) || 1;
+  const rMax = Math.max(18, Math.min(44, Math.min(W, H) / 16));
+  const r = d3.scaleSqrt().domain([0, max]).range([0, rMax]);
+  const color = x => modo === 'nac' ? COLOR.nac : modo === 'res' ? COLOR.res : (x.v > 0 ? COLOR.gana : COLOR.pierde);
+  gPaises.selectAll('path.pais').classed('con', f => { const n = nombrePorAtlas(f.properties.name); return !!(n && conteo.has(n)); });
+
+  gCirc.selectAll('circle').data(datos, x => x.p).join('circle').attr('class', 'circ')
+    .attr('cx', x => x.xy[0]).attr('cy', x => x.xy[1])
+    .attr('fill', color).attr('fill-opacity', .72)
+    .each(function(x){ this.__r = Math.max(2.5, r(Math.abs(x.v))); radios.set(x.p, this.__r); })
+    .on('mousemove', (e, x) => mostrarTip(textoTip(x), e)).on('mouseleave', ocultarTip)
+    .on('click', (e, x) => { e.stopPropagation(); seleccionar(x.p); })
+    .order();
+  const etq = $('#etiquetas').checked ? datos.filter(x => Math.abs(x.v) >= 2).slice(0, 70) : [];
+  gEtq.selectAll('text').data(etq, x => x.p).join(enter => {
+      const t = enter.append('text').attr('class', 'etq');
+      t.append('tspan').attr('class', 'nom'); t.append('tspan').attr('class', 'n'); return t; })
+    .attr('x', x => x.xy[0]).attr('y', x => x.xy[1])
+    .call(t => { t.select('.nom').text(x => x.p); t.select('.n').text(x => ' ' + (modo === 'saldo' && x.v > 0 ? '+' : '') + x.v); });
+  ajustarEscala();
+  marcarSel();
+
+  const tot = d3.sum(datos, x => Math.abs(x.v));
+  $('#resumen').innerHTML = modo === 'saldo'
+    ? `<b>${fmt(nBase)}</b> artistas con ambos datos · <b>${datos.filter(x => x.v > 0).length}</b> países ganan, <b>${datos.filter(x => x.v < 0).length}</b> pierden`
+    : `<b>${fmt(nBase)}</b> artistas en <b>${datos.length}</b> países`;
+
+  // ranking
+  $('#ranking-t').textContent = modo === 'saldo' ? 'Saldo por país' : 'Principales países';
+  const filas = modo === 'saldo' ? [...datos.filter(x => x.v > 0).slice(0, 6), ...datos.filter(x => x.v < 0).slice(0, 6)] : datos.slice(0, 12);
+  $('#ranking ol').innerHTML = filas.map(x => `<li data-p="${esc(x.p)}"><span>${esc(x.p)}</span><i style="width:${Math.max(2, 100 * Math.abs(x.v) / max)}%;background:${color(x)}"></i><b>${modo === 'saldo' && x.v > 0 ? '+' : ''}${x.v}</b></li>`).join('');
+  $('#ranking ol').querySelectorAll('li').forEach(li => li.onclick = () => seleccionar(li.dataset.p, true));
+
+  // leyenda de tamaños
+  const ej = [max, Math.round(max / 4), Math.max(1, Math.round(max / 20))].filter((v, i, a) => a.indexOf(v) === i);
+  const ancho = rMax * 2 + 60, alto = rMax * 2 + 6;
+  $('#escala').innerHTML = `<div style="margin-bottom:4px">${modo === 'saldo' ? '<span style="color:' + COLOR.gana + '">● gana</span> &nbsp;<span style="color:' + COLOR.pierde + '">● pierde</span>' : 'Artistas'}</div><svg width="${ancho}" height="${alto}">` +
+    ej.map(v => `<circle cx="${rMax + 2}" cy="${alto - 2 - r(v)}" r="${r(v)}" fill="none" stroke="#9a9a95"/><text x="${rMax * 2 + 10}" y="${alto - 2 - 2 * r(v) + 4}" font-size="11" fill="#6b6b6b">${v}</text>`).join('') + '</svg>';
+}
+
+function ajustarEscala(){
+  gCirc.selectAll('circle').attr('r', function(){ return this.__r / Math.pow(k, .75); }).attr('stroke-width', 1 / k);
+  // etiquetas sin superposición, calculadas en pantalla (al acercar aparecen más)
+  const t = d3.zoomTransform(svg.node()), puestas = [];
+  gEtq.selectAll('text').style('font-size', (11.5 / k) + 'px').style('stroke-width', (3 / k) + 'px')
+    .attr('text-anchor', 'middle').attr('y', x => x.xy[1] - (radios.get(x.p) || 0) / Math.pow(k, .75) - 4 / k)
+    .attr('display', function(x){
+      const w = (x.p.length + String(x.v).length + 1) * 6.4, cx = t.applyX(x.xy[0]);
+      const y = t.applyY(x.xy[1] - (radios.get(x.p) || 0) / Math.pow(k, .75)) - 4;
+      const caja = [cx - w / 2 - 2, y - 12, cx + w / 2 + 2, y + 2];
+      if (puestas.some(b => caja[0] < b[2] && caja[2] > b[0] && caja[1] < b[3] && caja[3] > b[1])) return 'none';
+      puestas.push(caja); return null;
+    });
+  gPaises.selectAll('path').style('stroke-width', (.6 / k) + 'px');
+  $('#escala').style.visibility = k > 1.02 ? 'hidden' : 'visible';   // la leyenda de tamaños vale sin zoom
+}
+
+function textoTip(x){
+  const d = x.d;
+  return `<b>${esc(x.p)}</b><br>Nacieron aquí: ${d.nac.length}<br>Viven aquí: ${d.res.length}` +
+    (d.llegan.length || d.salen.length ? `<br>Llegaron: ${d.llegan.length} · Se fueron: ${d.salen.length}` : '');
+}
+
+function seleccionar(p, centrar){
+  const d = conteo.get(p); if (!d) return;
+  selPais = p; marcarSel();
+  const orden = arr => [...arr].sort((a, b) => a.nombre.localeCompare(b.nombre, 'es'));
+  const ciudades = a => a.r.residencia || a.res.join(', ');
+  const secciones = modo === 'saldo'
+    ? [{titulo:'Llegaron (viven aquí, nacieron en otro país)', items:orden(d.llegan).map(a => ({nombre:a.nombre, det:'nac. ' + a.nac}))},
+       {titulo:'Se fueron (nacieron aquí, viven fuera)', items:orden(d.salen).map(a => ({nombre:a.nombre, det:ciudades(a)}))}]
+    : [{titulo:'Nacieron aquí', items:orden(d.nac).map(a => ({nombre:a.nombre, det:a.res.length ? ciudades(a) : ''}))},
+       {titulo:'Viven aquí', items:orden(d.res).map(a => ({nombre:a.nombre, det:a.nac ? 'nac. ' + a.nac : ''}))}];
+  if (modo === 'res') secciones.reverse();
+  abrirLista(p, `${region(p)} · nacieron ${d.nac.length} · viven ${d.res.length}` + (d.llegan.length || d.salen.length ? ` · llegaron ${d.llegan.length} · se fueron ${d.salen.length}` : '') +
+    '<br>Clic en un nombre abre su ficha en la tabla.', secciones);
+  // centrar después de que el panel cambie el ancho del mapa
+  if (centrar) requestAnimationFrame(() => requestAnimationFrame(() => {
+    const xy = centro.get(p);
+    if (xy) svg.transition().duration(500).call(zoom.transform, d3.zoomIdentity.translate(W / 2, H / 2).scale(Math.max(k, 3)).translate(-xy[0], -xy[1]));
+  }));
+}
+function marcarSel(){
+  gCirc.selectAll('circle').classed('sel', x => x.p === selPais).attr('stroke-width', x => (x.p === selPais ? 2 : 1) / k);
+  const an = selPais && PAISES[selPais] ? PAISES[selPais][0] : null;
+  gPaises.selectAll('path.pais').classed('sel', f => f.properties.name === an);
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,322 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Flujos de artistas</title>
+<style>
+  :root{
+    --bg:#ffffff; --ink:#1a1a1a; --soft:#6b6b6b; --faint:#9a9a95; --line:#e4e4e0; --alt:#f6f6f3;
+    --accent:#1f4e79; --nac:#3f8a4a; --res:#e0701f; --tema:#b5523b;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;background:var(--bg);color:var(--ink);
+    font:14px/1.45 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif}
+  body{display:flex;flex-direction:column;height:100vh;height:100dvh;overflow:hidden}
+  a{color:var(--accent)}
+  header{padding:18px 24px 12px;border-bottom:1px solid var(--line);display:flex;gap:16px;align-items:flex-end;justify-content:space-between;flex-wrap:wrap}
+  h1{margin:0 0 3px;font-size:21px;font-weight:600;letter-spacing:-.01em}
+  header p{margin:0;color:var(--soft);font-size:13px;max-width:760px}
+  nav.vistas{display:flex;gap:2px;flex-wrap:wrap;background:var(--alt);border:1px solid var(--line);border-radius:8px;padding:3px}
+  nav.vistas a{font-size:13px;text-decoration:none;color:var(--soft);padding:5px 11px;border-radius:6px;white-space:nowrap}
+  nav.vistas a:hover{color:var(--ink);background:#fff}
+  nav.vistas a[aria-current]{background:#fff;color:var(--ink);font-weight:600;box-shadow:0 1px 3px rgba(0,0,0,.08)}
+  .controles{display:flex;flex-wrap:wrap;gap:8px 16px;align-items:center;padding:10px 24px;border-bottom:1px solid var(--line);font-size:13px}
+  .grupo{display:flex;align-items:center;gap:6px}
+  .grupo > span{color:var(--soft)}
+  .seg{display:inline-flex;border:1px solid var(--line);border-radius:7px;overflow:hidden}
+  .seg button{border:none;border-radius:0;padding:5px 10px;background:#fff;font:inherit;font-size:13px;cursor:pointer;color:var(--soft)}
+  .seg button + button{border-left:1px solid var(--line)}
+  .seg button:hover{background:var(--alt);color:var(--ink)}
+  .seg button[aria-pressed=true]{background:var(--ink);color:#fff}
+  select,input[type=search]{font:inherit;font-size:13px;padding:5px 8px;border:1px solid var(--line);border-radius:7px;background:#fff;color:var(--ink);max-width:100%}
+  input[type=range]{accent-color:var(--accent);width:110px}
+  output{font-variant-numeric:tabular-nums;min-width:20px;display:inline-block}
+  label.chk{display:flex;align-items:center;gap:6px;cursor:pointer}
+  .resumen{margin-left:auto;color:var(--soft);font-size:12.5px}
+  .resumen b{color:var(--ink);font-weight:600}
+  main{flex:1;min-height:0;display:flex;position:relative}
+  .lienzo{flex:1;min-width:0;overflow:auto;position:relative}
+  aside.lista{width:330px;flex:none;border-left:1px solid var(--line);overflow:auto;padding:16px 18px;display:none;position:relative;background:#fff}
+  aside.lista.abierta{display:block}
+  aside.lista h3{margin:0 28px 2px 0;font-size:16px;line-height:1.3}
+  aside.lista .meta{color:var(--soft);font-size:12.5px;margin-bottom:12px}
+  aside.lista h4{font-size:10.5px;text-transform:uppercase;letter-spacing:.07em;color:var(--soft);margin:14px 0 6px;font-weight:650}
+  aside.lista ul{list-style:none;margin:0;padding:0;font-size:13px}
+  aside.lista li{padding:4px 0;border-bottom:1px solid var(--alt);display:flex;gap:8px;align-items:baseline}
+  aside.lista li a{text-decoration:none;font-weight:550}
+  aside.lista li a:hover{text-decoration:underline}
+  aside.lista li .det{color:var(--soft);font-size:12px;margin-left:auto;text-align:right}
+  .cerrar{position:absolute;top:10px;right:10px;border:none;background:none;font-size:20px;line-height:1;color:var(--soft);padding:2px 8px;cursor:pointer;border-radius:6px}
+  .cerrar:hover{background:var(--alt)}
+  .tip{position:fixed;pointer-events:none;background:#1a1a1a;color:#fff;font-size:12px;line-height:1.4;padding:6px 9px;border-radius:6px;display:none;z-index:20;max-width:300px}
+  .tip b{font-weight:600}
+  .pie{color:var(--soft);font-size:12px;padding:8px 24px 10px;border-top:1px solid var(--line);line-height:1.5}
+  details.pie summary{cursor:pointer;color:var(--ink);font-weight:550;width:max-content}
+  details.pie[open] summary{margin-bottom:4px}
+  .cargando{padding:40px 24px;color:var(--soft)}
+  .leyenda{display:flex;flex-wrap:wrap;gap:4px 14px;font-size:12px;color:var(--soft)}
+  .leyenda i{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:5px;vertical-align:-1px}
+  @media (max-width:760px){
+    header,.controles{padding-left:16px;padding-right:16px}
+    .pie{padding-left:16px;padding-right:16px}
+    .resumen{margin-left:0;width:100%}
+    aside.lista{position:absolute;inset:auto 0 0 0;width:auto;max-height:55%;border-left:none;border-top:1px solid var(--line);box-shadow:0 -6px 20px rgba(0,0,0,.08);z-index:10}
+  }
+
+  svg{display:block}
+  .enlace-flujo{fill:none;cursor:pointer;transition:stroke-opacity .12s}
+  .nodo rect{cursor:pointer}
+  .nodo text{font-size:12px;fill:var(--ink);pointer-events:none}
+  .nodo text .n{fill:var(--faint);font-variant-numeric:tabular-nums}
+  .titulo-col{font-size:10.5px;text-transform:uppercase;letter-spacing:.07em;fill:var(--soft);font-weight:650}
+  #rango:disabled{opacity:.4}
+</style>
+</head>
+<body>
+<header>
+  <div>
+    <h1>Flujos: dónde nacen y dónde viven</h1>
+    <p>Cada banda une el país de nacimiento con el país de residencia. Solo entran los artistas que tienen ambos datos. Pasa el cursor para resaltar y haz clic para ver los nombres.</p>
+  </div>
+  <nav class="vistas" aria-label="Vistas"><a href="index.html">Tabla</a><a href="grafo.html">Red</a><a href="flujos.html" aria-current="page">Flujos</a><a href="mapa.html">Mapa</a><a href="temas.html">Temas</a></nav>
+</header>
+<div class="controles">
+  <div class="grupo"><span>Nivel</span>
+    <div class="seg" id="nivel"><button data-v="pais" aria-pressed="true">País</button><button data-v="region" aria-pressed="false">Región</button></div></div>
+  <div class="grupo"><select id="fuente" aria-label="Fuente"></select></div>
+  <div class="grupo"><span>Países por lado</span><input type="range" id="rango" min="5" max="30" value="14"><output id="rango-v">14</output></div>
+  <label class="chk"><input type="checkbox" id="ocultar"> Solo quienes viven fuera</label>
+  <div class="resumen" id="resumen"></div>
+</div>
+<main>
+  <div class="lienzo" id="lienzo"><div class="cargando">Cargando…</div></div>
+  <aside class="lista"></aside>
+</main>
+
+<script src="https://cdn.jsdelivr.net/npm/d3@7.9.0/dist/d3.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/d3-sankey@0.12.3/dist/d3-sankey.min.js"></script>
+<script>
+// ---------- común a las vistas ----------
+const $ = s => document.querySelector(s);
+const PAISES = {"Estados Unidos": ["United States of America", "Norteamérica"], "Canadá": ["Canada", "Norteamérica"], "Reino Unido": ["United Kingdom", "Europa occidental y del norte"], "Reino de Escocia": ["United Kingdom", "Europa occidental y del norte"], "Isla de Man": ["Isle of Man", "Europa occidental y del norte"], "Irlanda": ["Ireland", "Europa occidental y del norte"], "Islandia": ["Iceland", "Europa occidental y del norte"], "Suecia": ["Sweden", "Europa occidental y del norte"], "Dinamarca": ["Denmark", "Europa occidental y del norte"], "Noruega": ["Norway", "Europa occidental y del norte"], "Finlandia": ["Finland", "Europa occidental y del norte"], "Estonia": ["Estonia", "Europa occidental y del norte"], "Lituania": ["Lithuania", "Europa occidental y del norte"], "Alemania": ["Germany", "Europa occidental y del norte"], "Francia": ["France", "Europa occidental y del norte"], "Suiza": ["Switzerland", "Europa occidental y del norte"], "Bélgica": ["Belgium", "Europa occidental y del norte"], "Países Bajos": ["Netherlands", "Europa occidental y del norte"], "Austria": ["Austria", "Europa occidental y del norte"], "Mónaco": ["Monaco", "Europa occidental y del norte"], "Italia": ["Italy", "Europa del sur"], "España": ["Spain", "Europa del sur"], "Portugal": ["Portugal", "Europa del sur"], "Grecia": ["Greece", "Europa del sur"], "Eslovenia": ["Slovenia", "Europa del sur"], "Croacia": ["Croatia", "Europa del sur"], "Serbia": ["Serbia", "Europa del sur"], "Bosnia y Herzegovina": ["Bosnia and Herz.", "Europa del sur"], "Albania": ["Albania", "Europa del sur"], "Polonia": ["Poland", "Europa del este"], "República Checa": ["Czechia", "Europa del este"], "Eslovaquia": ["Slovakia", "Europa del este"], "Hungría": ["Hungary", "Europa del este"], "Rumania": ["Romania", "Europa del este"], "Bulgaria": ["Bulgaria", "Europa del este"], "Moldavia": ["Moldova", "Europa del este"], "Ucrania": ["Ukraine", "Europa del este"], "Rusia": ["Russia", "Europa del este"], "Brasil": ["Brazil", "América Latina y el Caribe"], "México": ["Mexico", "América Latina y el Caribe"], "Argentina": ["Argentina", "América Latina y el Caribe"], "Colombia": ["Colombia", "América Latina y el Caribe"], "Cuba": ["Cuba", "América Latina y el Caribe"], "Chile": ["Chile", "América Latina y el Caribe"], "Perú": ["Peru", "América Latina y el Caribe"], "Venezuela": ["Venezuela", "América Latina y el Caribe"], "Guatemala": ["Guatemala", "América Latina y el Caribe"], "República Dominicana": ["Dominican Rep.", "América Latina y el Caribe"], "Uruguay": ["Uruguay", "América Latina y el Caribe"], "Costa Rica": ["Costa Rica", "América Latina y el Caribe"], "El Salvador": ["El Salvador", "América Latina y el Caribe"], "Ecuador": ["Ecuador", "América Latina y el Caribe"], "Paraguay": ["Paraguay", "América Latina y el Caribe"], "Panamá": ["Panama", "América Latina y el Caribe"], "Bolivia": ["Bolivia", "América Latina y el Caribe"], "Nicaragua": ["Nicaragua", "América Latina y el Caribe"], "Bahamas": ["Bahamas", "América Latina y el Caribe"], "Puerto Rico": ["Puerto Rico", "América Latina y el Caribe"], "Honduras": ["Honduras", "América Latina y el Caribe"], "Barbados": ["Barbados", "América Latina y el Caribe"], "Curazao": ["Curaçao", "América Latina y el Caribe"], "Guyana": ["Guyana", "América Latina y el Caribe"], "Montserrat": ["Montserrat", "América Latina y el Caribe"], "Trinidad y Tobago": ["Trinidad and Tobago", "América Latina y el Caribe"], "Sudáfrica": ["South Africa", "África subsahariana"], "Nigeria": ["Nigeria", "África subsahariana"], "Ghana": ["Ghana", "África subsahariana"], "Kenia": ["Kenya", "África subsahariana"], "Etiopía": ["Ethiopia", "África subsahariana"], "Malaui": ["Malawi", "África subsahariana"], "Tanzania": ["Tanzania", "África subsahariana"], "Mali": ["Mali", "África subsahariana"], "Malí": ["Mali", "África subsahariana"], "Camerún": ["Cameroon", "África subsahariana"], "Botsuana": ["Botswana", "África subsahariana"], "Uganda": ["Uganda", "África subsahariana"], "Marruecos": ["Morocco", "Norte de África y Asia occidental"], "Argelia": ["Algeria", "Norte de África y Asia occidental"], "Egipto": ["Egypt", "Norte de África y Asia occidental"], "Turquía": ["Turkey", "Norte de África y Asia occidental"], "Israel": ["Israel", "Norte de África y Asia occidental"], "Líbano": ["Lebanon", "Norte de África y Asia occidental"], "Irak": ["Iraq", "Norte de África y Asia occidental"], "Georgia": ["Georgia", "Norte de África y Asia occidental"], "Palestina": ["Palestine", "Norte de África y Asia occidental"], "Jordania": ["Jordan", "Norte de África y Asia occidental"], "Siria": ["Syria", "Norte de África y Asia occidental"], "Arabia Saudí": ["Saudi Arabia", "Norte de África y Asia occidental"], "Emiratos Árabes Unidos": ["United Arab Emirates", "Norte de África y Asia occidental"], "India": ["India", "Asia central y meridional"], "Pakistán": ["Pakistan", "Asia central y meridional"], "Irán": ["Iran", "Asia central y meridional"], "Afganistán": ["Afghanistan", "Asia central y meridional"], "Bangladés": ["Bangladesh", "Asia central y meridional"], "Tayikistán": ["Tajikistan", "Asia central y meridional"], "República Popular China": ["China", "Asia oriental"], "Japón": ["Japan", "Asia oriental"], "Corea del Sur": ["South Korea", "Asia oriental"], "Taiwán": ["Taiwan", "Asia oriental"], "Hong Kong": ["Hong Kong", "Asia oriental"], "Tailandia": ["Thailand", "Sudeste asiático"], "Indonesia": ["Indonesia", "Sudeste asiático"], "Filipinas": ["Philippines", "Sudeste asiático"], "Vietnam": ["Vietnam", "Sudeste asiático"], "Singapur": ["Singapore", "Sudeste asiático"], "Laos": ["Laos", "Sudeste asiático"], "Malasia": ["Malaysia", "Sudeste asiático"], "Australia": ["Australia", "Oceanía"], "Nueva Zelanda": ["New Zealand", "Oceanía"], "Vanuatu": ["Vanuatu", "Oceanía"]};           // nombre es -> [nombre en world-atlas, región]
+const ALIAS_PAIS = {'EE.UU.':'Estados Unidos','Reino de Escocia':'Reino Unido','Malí':'Mali'};
+const REGIONES = ["Norteamérica", "América Latina y el Caribe", "Europa occidental y del norte", "Europa del sur", "Europa del este", "África subsahariana", "Norte de África y Asia occidental", "Asia central y meridional", "Asia oriental", "Sudeste asiático", "Oceanía"];       // orden fijo de regiones
+const COLOR_REGION = Object.fromEntries(REGIONES.map((r, i) => [r,
+  ['#4e79a7','#e15759','#59a14f','#b07aa1','#499894','#f28e2b','#e5c13a','#9c755f','#7a4fa3','#d37295','#b6992d'][i]]));
+const FUENTES = ['Vitamin','Cream','Latin American Artists','Turner Prize','Prix Marcel Duchamp','ARTnews 100','Hugo Boss Prize','Frieze 25','NYT T 25'];
+
+function parseCSV(txt){
+  txt = txt.replace(/^﻿/, '');
+  const filas = []; let fila = [], campo = '', q = false;
+  for (let i = 0; i < txt.length; i++){
+    const c = txt[i];
+    if (q){ if (c === '"'){ if (txt[i+1] === '"'){ campo += '"'; i++; } else q = false; } else campo += c; }
+    else if (c === '"') q = true;
+    else if (c === ','){ fila.push(campo); campo = ''; }
+    else if (c === '\n' || c === '\r'){
+      if (c === '\r' && txt[i+1] === '\n') i++;
+      fila.push(campo); campo = '';
+      if (fila.some(v => v !== '')) filas.push(fila);
+      fila = [];
+    } else campo += c;
+  }
+  if (campo !== '' || fila.length){ fila.push(campo); if (fila.some(v => v !== '')) filas.push(fila); }
+  const cab = filas.shift().map(h => h.trim());
+  return filas.map(f => Object.fromEntries(cab.map((h, i) => [h, (f[i] || '').trim()])));
+}
+const lista = (s, sep) => (s || '').split(sep).map(x => x.trim()).filter(Boolean);
+const normPais = p => { p = ALIAS_PAIS[p] || p; return PAISES[p] ? p : null; };
+// País de nacimiento: si Wikidata dio dos («Puerto Rico / EE.UU.»), se usa el primero.
+const paisNac = r => normPais(lista(r.pais_nacimiento, '/')[0] || '');
+const paisesRes = r => [...new Set(lista(r.pais_residencia, ';').map(normPais).filter(Boolean))];
+const region = p => p && PAISES[p] ? PAISES[p][1] : null;
+const fuentesDe = r => lista(r.fuentes, '|');
+const fmt = n => n.toLocaleString('es-PE');
+const esc = s => String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const enlaceTabla = nombre => `index.html?q=${encodeURIComponent(nombre)}`;
+
+function cargarCSV(){
+  return fetch('artistas.csv').then(r => { if (!r.ok) throw new Error('No se pudo leer artistas.csv'); return r.text(); }).then(parseCSV);
+}
+function selectorFuentes(sel){
+  sel.innerHTML = '<option value="">Todas las fuentes</option>' + FUENTES.map(f => `<option>${f}</option>`).join('');
+}
+function segmentado(cont, alCambiar){
+  cont.addEventListener('click', e => {
+    const b = e.target.closest('button'); if (!b) return;
+    cont.querySelectorAll('button').forEach(x => x.setAttribute('aria-pressed', x === b));
+    alCambiar(b.dataset.v);
+  });
+}
+const valorSeg = cont => cont.querySelector('[aria-pressed=true]').dataset.v;
+
+// Panel lateral con la lista de artistas
+function abrirLista(titulo, meta, secciones){
+  const a = $('aside.lista');
+  a.innerHTML = `<button class="cerrar" type="button" aria-label="Cerrar">×</button><h3>${esc(titulo)}</h3><div class="meta">${meta}</div>` +
+    secciones.filter(s => s.items.length).map(s => `<h4>${esc(s.titulo)} · ${s.items.length}</h4><ul>` +
+      s.items.map(it => `<li><a href="${enlaceTabla(it.nombre)}" target="_blank">${esc(it.nombre)}</a><span class="det">${esc(it.det || '')}</span></li>`).join('') + '</ul>').join('');
+  a.classList.add('abierta');
+  a.scrollTop = 0;
+  a.querySelector('.cerrar').onclick = cerrarLista;
+}
+function cerrarLista(){ $('aside.lista').classList.remove('abierta'); if (window.alCerrarLista) window.alCerrarLista(); }
+document.addEventListener('keydown', e => { if (e.key === 'Escape') cerrarLista(); });
+
+const tip = document.createElement('div'); tip.className = 'tip'; document.body.appendChild(tip);
+function mostrarTip(html, ev){
+  tip.innerHTML = html; tip.style.display = 'block';
+  const w = tip.offsetWidth, h = tip.offsetHeight;
+  let x = ev.clientX + 14, y = ev.clientY + 14;
+  if (x + w > innerWidth - 8) x = ev.clientX - w - 14;
+  if (y + h > innerHeight - 8) y = ev.clientY - h - 14;
+  tip.style.left = x + 'px'; tip.style.top = y + 'px';
+}
+const ocultarTip = () => { tip.style.display = 'none'; };
+
+// ---------- flujos ----------
+let A = [], sel = null, selClave = null;
+const claveLink = d => d.source.id + '|' + d.target.id + '|' + d.p.misma + '|' + d.p.rg;
+const OTROS = 'Otros países';
+selectorFuentes($('#fuente'));
+segmentado($('#nivel'), () => { $('#rango').disabled = valorSeg($('#nivel')) === 'region'; dibujar(); });
+$('#fuente').onchange = dibujar;
+$('#ocultar').onchange = dibujar;
+$('#rango').oninput = () => { $('#rango-v').textContent = $('#rango').value; dibujar(); };
+window.alCerrarLista = () => { sel = null; selClave = null; resaltar(null); };
+
+cargarCSV().then(rows => {
+  A = rows.map(r => ({nombre:r.artista, nac:paisNac(r), res:paisesRes(r), f:fuentesDe(r), r}));
+  const conRes = A.filter(a => a.res.length).length;
+  $('#cob').textContent = `${fmt(conRes)} de ${fmt(A.length)}`;
+  dibujar();
+  new ResizeObserver(() => dibujar()).observe($('#lienzo'));
+}).catch(e => { $('#lienzo').innerHTML = `<div class="cargando">${esc(e.message)}</div>`; });
+
+function datos(){
+  const nivel = valorSeg($('#nivel')), fuente = $('#fuente').value, nTop = +$('#rango').value, ocultar = $('#ocultar').checked;
+  const clave = p => nivel === 'region' ? region(p) : p;
+  const base = A.filter(a => a.nac && a.res.length && (!fuente || a.f.includes(fuente)));
+  // tamaño de cada lado en artistas únicos, para elegir los países visibles
+  const cIzq = d3.rollup(base, v => v.length, a => clave(a.nac));
+  const cDer = new Map();
+  base.forEach(a => new Set(a.res.map(clave)).forEach(k => cDer.set(k, (cDer.get(k) || 0) + 1)));
+  const top = m => new Set([...m].sort((x, y) => y[1] - x[1]).slice(0, nivel === 'region' ? 99 : nTop).map(d => d[0]));
+  const tI = top(cIzq), tD = top(cDer);
+  const izq = k => tI.has(k) ? k : OTROS, der = k => tD.has(k) ? k : OTROS;
+
+  const pares = new Map(), nodosI = new Map(), nodosD = new Map();
+  let fuera = 0; const destinos = new Map();
+  for (const a of base){
+    const kn = clave(a.nac);
+    const migra = a.res.some(p => p !== a.nac);
+    if (migra){ fuera++; a.res.filter(p => p !== a.nac).forEach(p => destinos.set(p, (destinos.get(p) || 0) + 1)); }
+    const vistos = new Set();
+    for (const p of a.res){
+      const kr = clave(p), misma = kr === kn;
+      if (ocultar && misma) continue;
+      const L = izq(kn), R = der(kr), rg = nivel === 'region' ? kn : region(a.nac);
+      const id = L + '→' + R + (misma ? '·m' : '') + (L === OTROS ? '·' + rg : '');
+      if (vistos.has(id)) continue; vistos.add(id);
+      if (!pares.has(id)) pares.set(id, {L, R, misma, rg, artistas:[]});
+      pares.get(id).artistas.push(a);
+      (nodosI.get(L) || nodosI.set(L, new Set()).get(L)).add(a);
+      (nodosD.get(R) || nodosD.set(R, new Set()).get(R)).add(a);
+    }
+  }
+  return {nivel, base, pares, nodosI, nodosD, fuera, destinos, ocultar};
+}
+
+let D = null;
+function dibujar(){
+  if (!A.length) return;
+  D = datos();
+  const {nivel, base, pares, nodosI, nodosD, fuera, destinos} = D;
+  const top3 = [...destinos].sort((a, b) => b[1] - a[1]).slice(0, 3).map(([p, n]) => `${p} (${n})`).join(', ');
+  $('#resumen').innerHTML = base.length
+    ? `<b>${fmt(base.length)}</b> artistas con ambos datos · <b>${fmt(fuera)}</b> (${Math.round(100 * fuera / base.length)} %) viven fuera de su país de nacimiento` + (top3 ? ` · destinos principales: ${top3}` : '')
+    : 'Sin artistas con ambos datos para este filtro';
+
+  const cont = $('#lienzo');
+  if (!pares.size){ cont.innerHTML = '<div class="cargando">No hay flujos para este filtro.</div>'; return; }
+  const W = Math.max(cont.clientWidth, 520);
+  const lado = Math.max(nodosI.size, nodosD.size);
+  const H = Math.max(cont.clientHeight - 48, 420, lado * 30 + 60);
+  const largo = Math.max(...[...nodosI.keys(), ...nodosD.keys()].map(k => k.length + 4));
+  const margen = Math.min(Math.max(150, largo * 6.9 + 14), W * .32);
+
+  const orden = (a, b) => (a.nombre === OTROS) - (b.nombre === OTROS) || b.value - a.value;
+  const nodes = [...[...nodosI.keys()].map(k => ({id:'i:' + k, nombre:k, lado:'i', arts:nodosI.get(k)})),
+                 ...[...nodosD.keys()].map(k => ({id:'d:' + k, nombre:k, lado:'d', arts:nodosD.get(k)}))];
+  const links = [...pares.values()].map(p => ({source:'i:' + p.L, target:'d:' + p.R, value:p.artistas.length, p}));
+  const g = d3.sankey().nodeId(d => d.id).nodeWidth(12).nodePadding(Math.max(8, Math.min(22, (H - 60) / lado * .35)))
+    .nodeSort(orden).extent([[margen, 34], [W - margen, H - 14]])({nodes, links});
+
+  const colorDe = l => l.p.misma ? '#b4b4ae' : (COLOR_REGION[l.p.rg] || '#b4b4ae');
+  const regsVis = REGIONES.filter(r => links.some(l => !l.p.misma && l.p.rg === r));
+
+  cont.innerHTML = `<div class="leyenda" style="padding:10px 24px 0">Color de la banda según la región de nacimiento: ${regsVis.map(r => `<span><i style="background:${COLOR_REGION[r]}"></i>${r}</span>`).join('')}<span><i style="background:#b4b4ae"></i>${nivel === 'region' ? 'misma región' : 'mismo país'}</span></div>`;
+  const svg = d3.select(cont).append('svg').attr('width', W).attr('height', H);
+  svg.append('text').attr('class', 'titulo-col').attr('x', margen + 6).attr('y', 18).attr('text-anchor', 'end').text('Nacimiento');
+  svg.append('text').attr('class', 'titulo-col').attr('x', W - margen - 6).attr('y', 18).text('Residencia');
+  svg.on('click', e => { if (e.target === svg.node()) cerrarLista(); });
+
+  svg.append('g').selectAll('path').data(g.links).join('path')
+    .attr('class', 'enlace-flujo').attr('d', d3.sankeyLinkHorizontal())
+    .attr('stroke', colorDe).attr('stroke-width', d => Math.max(1, d.width))
+    .attr('stroke-opacity', d => d.p.misma ? .3 : .55)
+    .on('mousemove', (e, d) => mostrarTip(`<b>${esc(d.p.L)} → ${esc(d.p.R)}</b><br>${d.value} ${d.value === 1 ? 'artista' : 'artistas'}${d.p.misma ? (nivel === 'region' ? ' · misma región' : ' · mismo país') : ''}`, e))
+    .on('mouseenter', (e, d) => { if (!sel) resaltar({link:d}); })
+    .on('mouseleave', () => { ocultarTip(); if (!sel) resaltar(null); })
+    .on('click', (e, d) => { sel = {link:d}; selClave = 'l:' + claveLink(d); resaltar(sel); listaEnlace(d); });
+
+  const n = svg.append('g').selectAll('g').data(g.nodes).join('g').attr('class', 'nodo');
+  n.append('rect').attr('x', d => d.x0).attr('y', d => d.y0).attr('width', d => d.x1 - d.x0).attr('height', d => Math.max(1, d.y1 - d.y0))
+    .attr('fill', d => d.nombre === OTROS ? '#9a9a95' : (d.lado === 'i' ? 'var(--nac)' : 'var(--res)'))
+    .on('mousemove', (e, d) => mostrarTip(`<b>${esc(d.nombre)}</b><br>${d.lado === 'i' ? 'Nacieron aquí' : 'Viven aquí'}: ${d.arts.size}`, e))
+    .on('mouseenter', (e, d) => { if (!sel) resaltar({nodo:d}); })
+    .on('mouseleave', () => { ocultarTip(); if (!sel) resaltar(null); })
+    .on('click', (e, d) => { sel = {nodo:d}; selClave = 'n:' + d.id; resaltar(sel); listaNodo(d); });
+  const t = n.append('text').attr('dy', '.35em').attr('y', d => (d.y0 + d.y1) / 2)
+    .attr('x', d => d.lado === 'i' ? d.x0 - 7 : d.x1 + 7).attr('text-anchor', d => d.lado === 'i' ? 'end' : 'start');
+  t.append('tspan').text(d => d.nombre);
+  t.append('tspan').attr('class', 'n').text(d => ' ' + d.arts.size);
+  // conservar la selección al redibujar (p. ej., al abrirse el panel)
+  sel = null;
+  if (selClave){
+    const l = g.links.find(d => 'l:' + claveLink(d) === selClave), nd = g.nodes.find(d => 'n:' + d.id === selClave);
+    if (l) sel = {link:l}; else if (nd) sel = {nodo:nd}; else { selClave = null; $('aside.lista').classList.remove('abierta'); }
+    resaltar(sel);
+  }
+}
+
+function resaltar(s){
+  const svg = d3.select('#lienzo svg'); if (svg.empty()) return;
+  const activo = l => !s || (s.link ? l === s.link : (l.source === s.nodo || l.target === s.nodo));
+  svg.selectAll('.enlace-flujo').attr('stroke-opacity', l => activo(l) ? (s ? .8 : (l.p.misma ? .3 : .55)) : .05);
+  svg.selectAll('.nodo').attr('opacity', d => !s || (s.nodo ? d === s.nodo || d.sourceLinks.concat(d.targetLinks).some(activo) : d === s.link.source || d === s.link.target) ? 1 : .3);
+}
+
+const ciudades = a => a.r.residencia || a.res.join(', ');
+function listaEnlace(d){
+  const arts = [...d.p.artistas].sort((a, b) => a.nombre.localeCompare(b.nombre, 'es'));
+  abrirLista(`${d.p.L} → ${d.p.R}`, `${arts.length} ${arts.length === 1 ? 'artista' : 'artistas'}. Clic en un nombre abre su ficha en la tabla.`,
+    [{titulo:'Artistas', items:arts.map(a => ({nombre:a.nombre, det:(D.nivel === 'region' || d.p.L === OTROS ? a.nac + ' → ' : '') + ciudades(a)}))}]);
+}
+function listaNodo(d){
+  const arts = [...d.arts].sort((a, b) => a.nombre.localeCompare(b.nombre, 'es'));
+  if (d.lado === 'i'){
+    const fuera = arts.filter(a => a.res.some(p => p !== a.nac)), dentro = arts.filter(a => !a.res.some(p => p !== a.nac));
+    abrirLista(d.nombre, `Nacieron aquí ${arts.length} artistas con residencia conocida.`,
+      [{titulo:'Viven fuera (o entre dos países)', items:fuera.map(a => ({nombre:a.nombre, det:ciudades(a)}))},
+       {titulo:'Viven en su país', items:dentro.map(a => ({nombre:a.nombre, det:ciudades(a)}))}]);
+  } else {
+    abrirLista(d.nombre, `Viven aquí ${arts.length} artistas con país de nacimiento conocido.`,
+      [{titulo:'Artistas', items:arts.map(a => ({nombre:a.nombre, det:'nac. ' + a.nac}))}]);
+  }
+}
+</script>
+<details class="pie"><summary>Cómo leerlo</summary>Un artista con residencia en dos países aparece en ambas bandas, así que la columna de residencia puede sumar más que la de nacimiento. Si Wikidata da dos países de nacimiento, se usa el primero. Las bandas grises unen a quienes viven en su propio país (o región); dentro de «Otros países» las bandas se separan por región de nacimiento. Las regiones siguen las subregiones M49 de la ONU, agrupadas. Los datos de residencia cubren a <span id="cob">…</span> artistas, así que este es el mapa de quienes tienen residencia documentada, no de toda la base.</details>
+</body>
+</html>

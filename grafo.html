@@ -25,6 +25,12 @@
   #control.plegado .cab{border-bottom:none}
   #control .cab h1{font-size:15px;margin:0;font-weight:650;flex:1;letter-spacing:-.01em}
   #control .cab a{font-size:12.5px;text-decoration:none;white-space:nowrap}
+  nav.vistas{display:flex;gap:2px;flex-wrap:wrap;background:var(--alt);border:1px solid var(--line);border-radius:8px;padding:3px}
+  nav.vistas a{font-size:13px;text-decoration:none;color:var(--soft);padding:5px 11px;border-radius:6px;white-space:nowrap}
+  nav.vistas a:hover{color:var(--ink);background:#fff}
+  nav.vistas a[aria-current]{background:#fff;color:var(--ink);font-weight:600;box-shadow:0 1px 3px rgba(0,0,0,.08)}
+  .navfila{padding:8px 14px 0} .navfila nav.vistas a{padding:4px 8px;font-size:12.5px}
+  #control.plegado .navfila{display:none}
   #plegar{padding:2px 8px;font-size:15px;line-height:1.2}
   #control .cuerpo{overflow:auto;padding:12px 14px 14px}
   #control.plegado .cuerpo{display:none}
@@ -93,9 +99,9 @@
 <div id="control" class="panel">
   <div class="cab">
     <h1>Red de artistas</h1>
-    <a href="index.html">Tabla →</a>
     <button id="plegar" type="button" title="Plegar panel" aria-label="Plegar panel">–</button>
   </div>
+  <div class="navfila"><nav class="vistas" aria-label="Vistas"><a href="index.html">Tabla</a><a href="grafo.html" aria-current="page">Red</a><a href="flujos.html">Flujos</a><a href="mapa.html">Mapa</a><a href="temas.html">Temas</a></nav></div>
   <div class="cuerpo">
     <p class="sub" id="sub">Cargando…</p>
     <input type="search" id="buscar" list="nombres" placeholder="Buscar artista o categoría…" autocomplete="off">

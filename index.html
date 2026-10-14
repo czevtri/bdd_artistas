@@ -14,6 +14,10 @@
     font:14px/1.45 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif}
   body{display:flex;flex-direction:column;height:100vh;height:100dvh;overflow:hidden}
   header{padding:22px 24px 14px;border-bottom:1px solid var(--line);display:flex;gap:16px;align-items:flex-end;justify-content:space-between;flex-wrap:wrap}
+  nav.vistas{display:flex;gap:2px;flex-wrap:wrap;background:var(--alt);border:1px solid var(--line);border-radius:8px;padding:3px}
+  nav.vistas a{font-size:13px;text-decoration:none;color:var(--soft);padding:5px 11px;border-radius:6px;white-space:nowrap}
+  nav.vistas a:hover{color:var(--ink);background:#fff}
+  nav.vistas a[aria-current]{background:#fff;color:var(--ink);font-weight:600;box-shadow:0 1px 3px rgba(0,0,0,.08)}
   .enlace{font-size:13px;text-decoration:none;border:1px solid var(--line);border-radius:6px;padding:7px 12px;white-space:nowrap}
   .enlace:hover{background:var(--alt)}
   h1{margin:0 0 4px;font-size:22px;font-weight:600;letter-spacing:-.01em}
@@ -58,7 +62,7 @@
     <h1>Base de artistas contemporáneos</h1>
     <p id="sub">Cargando datos…</p>
   </div>
-  <a class="enlace" href="grafo.html">Ver como red →</a>
+  <nav class="vistas" aria-label="Vistas"><a href="index.html" aria-current="page">Tabla</a><a href="grafo.html">Red</a><a href="flujos.html">Flujos</a><a href="mapa.html">Mapa</a><a href="temas.html">Temas</a></nav>
 </header>
 
 <div class="controls">

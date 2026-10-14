@@ -1,0 +1,335 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Matriz de temas</title>
+<style>
+  :root{
+    --bg:#ffffff; --ink:#1a1a1a; --soft:#6b6b6b; --faint:#9a9a95; --line:#e4e4e0; --alt:#f6f6f3;
+    --accent:#1f4e79; --nac:#3f8a4a; --res:#e0701f; --tema:#b5523b;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;background:var(--bg);color:var(--ink);
+    font:14px/1.45 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif}
+  body{display:flex;flex-direction:column;height:100vh;height:100dvh;overflow:hidden}
+  a{color:var(--accent)}
+  header{padding:18px 24px 12px;border-bottom:1px solid var(--line);display:flex;gap:16px;align-items:flex-end;justify-content:space-between;flex-wrap:wrap}
+  h1{margin:0 0 3px;font-size:21px;font-weight:600;letter-spacing:-.01em}
+  header p{margin:0;color:var(--soft);font-size:13px;max-width:760px}
+  nav.vistas{display:flex;gap:2px;flex-wrap:wrap;background:var(--alt);border:1px solid var(--line);border-radius:8px;padding:3px}
+  nav.vistas a{font-size:13px;text-decoration:none;color:var(--soft);padding:5px 11px;border-radius:6px;white-space:nowrap}
+  nav.vistas a:hover{color:var(--ink);background:#fff}
+  nav.vistas a[aria-current]{background:#fff;color:var(--ink);font-weight:600;box-shadow:0 1px 3px rgba(0,0,0,.08)}
+  .controles{display:flex;flex-wrap:wrap;gap:8px 16px;align-items:center;padding:10px 24px;border-bottom:1px solid var(--line);font-size:13px}
+  .grupo{display:flex;align-items:center;gap:6px}
+  .grupo > span{color:var(--soft)}
+  .seg{display:inline-flex;border:1px solid var(--line);border-radius:7px;overflow:hidden}
+  .seg button{border:none;border-radius:0;padding:5px 10px;background:#fff;font:inherit;font-size:13px;cursor:pointer;color:var(--soft)}
+  .seg button + button{border-left:1px solid var(--line)}
+  .seg button:hover{background:var(--alt);color:var(--ink)}
+  .seg button[aria-pressed=true]{background:var(--ink);color:#fff}
+  select,input[type=search]{font:inherit;font-size:13px;padding:5px 8px;border:1px solid var(--line);border-radius:7px;background:#fff;color:var(--ink);max-width:100%}
+  input[type=range]{accent-color:var(--accent);width:110px}
+  output{font-variant-numeric:tabular-nums;min-width:20px;display:inline-block}
+  label.chk{display:flex;align-items:center;gap:6px;cursor:pointer}
+  .resumen{margin-left:auto;color:var(--soft);font-size:12.5px}
+  .resumen b{color:var(--ink);font-weight:600}
+  main{flex:1;min-height:0;display:flex;position:relative}
+  .lienzo{flex:1;min-width:0;overflow:auto;position:relative}
+  aside.lista{width:330px;flex:none;border-left:1px solid var(--line);overflow:auto;padding:16px 18px;display:none;position:relative;background:#fff}
+  aside.lista.abierta{display:block}
+  aside.lista h3{margin:0 28px 2px 0;font-size:16px;line-height:1.3}
+  aside.lista .meta{color:var(--soft);font-size:12.5px;margin-bottom:12px}
+  aside.lista h4{font-size:10.5px;text-transform:uppercase;letter-spacing:.07em;color:var(--soft);margin:14px 0 6px;font-weight:650}
+  aside.lista ul{list-style:none;margin:0;padding:0;font-size:13px}
+  aside.lista li{padding:4px 0;border-bottom:1px solid var(--alt);display:flex;gap:8px;align-items:baseline}
+  aside.lista li a{text-decoration:none;font-weight:550}
+  aside.lista li a:hover{text-decoration:underline}
+  aside.lista li .det{color:var(--soft);font-size:12px;margin-left:auto;text-align:right}
+  .cerrar{position:absolute;top:10px;right:10px;border:none;background:none;font-size:20px;line-height:1;color:var(--soft);padding:2px 8px;cursor:pointer;border-radius:6px}
+  .cerrar:hover{background:var(--alt)}
+  .tip{position:fixed;pointer-events:none;background:#1a1a1a;color:#fff;font-size:12px;line-height:1.4;padding:6px 9px;border-radius:6px;display:none;z-index:20;max-width:300px}
+  .tip b{font-weight:600}
+  .pie{color:var(--soft);font-size:12px;padding:8px 24px 10px;border-top:1px solid var(--line);line-height:1.5}
+  details.pie summary{cursor:pointer;color:var(--ink);font-weight:550;width:max-content}
+  details.pie[open] summary{margin-bottom:4px}
+  .cargando{padding:40px 24px;color:var(--soft)}
+  .leyenda{display:flex;flex-wrap:wrap;gap:4px 14px;font-size:12px;color:var(--soft)}
+  .leyenda i{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:5px;vertical-align:-1px}
+  @media (max-width:760px){
+    header,.controles{padding-left:16px;padding-right:16px}
+    .pie{padding-left:16px;padding-right:16px}
+    .resumen{margin-left:0;width:100%}
+    aside.lista{position:absolute;inset:auto 0 0 0;width:auto;max-height:55%;border-left:none;border-top:1px solid var(--line);box-shadow:0 -6px 20px rgba(0,0,0,.08);z-index:10}
+  }
+
+  .lienzo{padding:0}
+  table{border-collapse:separate;border-spacing:0;font-size:12.5px;margin:0 24px 24px 0}
+  th,td{padding:0}
+  thead th{position:sticky;background:#fff;z-index:2}
+  thead tr.cols th{top:0;height:150px;vertical-align:bottom;border-bottom:1px solid var(--line)}
+  thead tr.n th, thead tr.n td{position:sticky;top:150px;background:#fff;z-index:2}
+  thead tr.cob th, thead tr.cob td{position:sticky;top:172px;background:#fff;z-index:2;border-bottom:1px solid var(--line)}
+  thead tr.n td, thead tr.cob td{font-size:11px;color:var(--soft);text-align:center;height:22px;font-variant-numeric:tabular-nums}
+  th.esq{left:0;z-index:4;text-align:left;padding:0 12px 8px 24px;font-size:10.5px;text-transform:uppercase;letter-spacing:.07em;color:var(--soft);font-weight:650;min-width:250px}
+  tr.n th, tr.cob th{left:0;z-index:4;text-align:right;padding:0 12px 0 24px;font-size:11px;color:var(--soft);font-weight:500}
+  th.col{cursor:pointer;min-width:44px;max-width:44px;padding-bottom:8px}
+  th.col div{writing-mode:vertical-rl;transform:rotate(180deg);white-space:nowrap;margin:0 auto;font-weight:550;font-size:12px;color:var(--ink);max-height:140px;overflow:hidden;text-overflow:ellipsis}
+  th.col:hover div{color:var(--accent)}
+  th.col.orden div{color:var(--accent);text-decoration:underline}
+  th.col.poca div{color:var(--faint);font-style:italic}
+  th.tot div{color:var(--soft)}
+  tbody th{position:sticky;left:0;background:#fff;z-index:1;text-align:left;font-weight:500;padding:0 12px 0 24px;white-space:nowrap;cursor:pointer;height:28px;border-bottom:1px solid #f3f3f0}
+  tbody th:hover{color:var(--accent)}
+  tbody th .t{float:right;color:var(--faint);font-weight:400;font-variant-numeric:tabular-nums;margin-left:12px}
+  tbody td{text-align:center;font-variant-numeric:tabular-nums;cursor:pointer;border:1px solid #fff;height:28px;min-width:44px}
+  tbody td:hover{outline:2px solid var(--ink);outline-offset:-2px}
+  tbody td.poca{opacity:.38}
+  tbody td.sel{outline:2px solid var(--accent);outline-offset:-2px}
+  tbody td.tot{color:var(--soft);cursor:default;border-left:1px solid var(--line)}
+  tbody td.tot:hover{outline:none}
+  .escala-color{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--soft)}
+  .escala-color .barra{width:150px;height:10px;border-radius:2px;border:1px solid var(--line)}
+  @media (max-width:760px){ th.esq{min-width:150px;padding-left:16px} tbody th, tr.n th, tr.cob th{padding-left:16px;white-space:normal;line-height:1.2} .aviso{margin:10px 16px} }
+  .aviso{background:#fbf6ec;border:1px solid #efe3c8;color:#6a5524;border-radius:8px;padding:8px 12px;font-size:12.5px;margin:12px 24px}
+</style>
+</head>
+<body>
+<header>
+  <div>
+    <h1>Temas: qué se trabaja, con qué y desde dónde</h1>
+    <p>Cada fila es un tema y cada columna un grupo de artistas. Elige qué comparar y cómo medirlo; clic en una celda muestra los nombres y clic en una columna ordena las filas.</p>
+  </div>
+  <nav class="vistas" aria-label="Vistas"><a href="index.html">Tabla</a><a href="grafo.html">Red</a><a href="flujos.html">Flujos</a><a href="mapa.html">Mapa</a><a href="temas.html" aria-current="page">Temas</a></nav>
+</header>
+<div class="controles">
+  <div class="grupo"><span>Columnas</span>
+    <div class="seg" id="dim">
+      <button data-v="medio" aria-pressed="true">Medio</button><button data-v="decada" aria-pressed="false">Década</button><button data-v="region" aria-pressed="false">Región</button><button data-v="fuente" aria-pressed="false">Fuente</button>
+    </div></div>
+  <div class="grupo"><span>Valor</span>
+    <div class="seg" id="medida">
+      <button data-v="pct" aria-pressed="true">% de la columna</button><button data-v="indice" aria-pressed="false">Índice</button><button data-v="n" aria-pressed="false">Conteo</button>
+    </div></div>
+  <div class="grupo"><select id="fuente" aria-label="Fuente"></select></div>
+  <div class="escala-color" id="escala"></div>
+  <div class="resumen" id="resumen"></div>
+</div>
+<main>
+  <div class="lienzo" id="lienzo"><div class="cargando">Cargando…</div></div>
+  <aside class="lista"></aside>
+</main>
+<details class="pie"><summary>Cómo leerlo</summary><b>% de la columna</b>: de los artistas de esa columna que tienen temas, qué porcentaje trabaja ese tema. Sirve para comparar columnas de tamaño distinto. <b>Índice</b>: ese porcentaje dividido por el porcentaje del tema en toda la base; 1× es lo esperable, 2× el doble, 0,5× la mitad (rojo = sobrerrepresentado, azul = infrarrepresentado). <b>Conteo</b>: número de artistas. Un artista con varios medios o temas cuenta en cada uno. Las columnas con menos de <span id="umbral">15</span> artistas con temas aparecen atenuadas porque sus porcentajes son inestables. La fila «Cobertura» indica qué parte de cada columna tiene temas asignados: si es baja, la columna dice poco. Los temas se asignaron a partir de descripciones publicadas (sobre todo Wikipedia), con un vocabulario cerrado, así que reflejan en parte cómo esas fuentes describen la obra.</details>
+
+<script src="https://cdn.jsdelivr.net/npm/d3@7.9.0/dist/d3.min.js"></script>
+<script>
+// ---------- común a las vistas ----------
+const $ = s => document.querySelector(s);
+const PAISES = {"Estados Unidos": ["United States of America", "Norteamérica"], "Canadá": ["Canada", "Norteamérica"], "Reino Unido": ["United Kingdom", "Europa occidental y del norte"], "Reino de Escocia": ["United Kingdom", "Europa occidental y del norte"], "Isla de Man": ["Isle of Man", "Europa occidental y del norte"], "Irlanda": ["Ireland", "Europa occidental y del norte"], "Islandia": ["Iceland", "Europa occidental y del norte"], "Suecia": ["Sweden", "Europa occidental y del norte"], "Dinamarca": ["Denmark", "Europa occidental y del norte"], "Noruega": ["Norway", "Europa occidental y del norte"], "Finlandia": ["Finland", "Europa occidental y del norte"], "Estonia": ["Estonia", "Europa occidental y del norte"], "Lituania": ["Lithuania", "Europa occidental y del norte"], "Alemania": ["Germany", "Europa occidental y del norte"], "Francia": ["France", "Europa occidental y del norte"], "Suiza": ["Switzerland", "Europa occidental y del norte"], "Bélgica": ["Belgium", "Europa occidental y del norte"], "Países Bajos": ["Netherlands", "Europa occidental y del norte"], "Austria": ["Austria", "Europa occidental y del norte"], "Mónaco": ["Monaco", "Europa occidental y del norte"], "Italia": ["Italy", "Europa del sur"], "España": ["Spain", "Europa del sur"], "Portugal": ["Portugal", "Europa del sur"], "Grecia": ["Greece", "Europa del sur"], "Eslovenia": ["Slovenia", "Europa del sur"], "Croacia": ["Croatia", "Europa del sur"], "Serbia": ["Serbia", "Europa del sur"], "Bosnia y Herzegovina": ["Bosnia and Herz.", "Europa del sur"], "Albania": ["Albania", "Europa del sur"], "Polonia": ["Poland", "Europa del este"], "República Checa": ["Czechia", "Europa del este"], "Eslovaquia": ["Slovakia", "Europa del este"], "Hungría": ["Hungary", "Europa del este"], "Rumania": ["Romania", "Europa del este"], "Bulgaria": ["Bulgaria", "Europa del este"], "Moldavia": ["Moldova", "Europa del este"], "Ucrania": ["Ukraine", "Europa del este"], "Rusia": ["Russia", "Europa del este"], "Brasil": ["Brazil", "América Latina y el Caribe"], "México": ["Mexico", "América Latina y el Caribe"], "Argentina": ["Argentina", "América Latina y el Caribe"], "Colombia": ["Colombia", "América Latina y el Caribe"], "Cuba": ["Cuba", "América Latina y el Caribe"], "Chile": ["Chile", "América Latina y el Caribe"], "Perú": ["Peru", "América Latina y el Caribe"], "Venezuela": ["Venezuela", "América Latina y el Caribe"], "Guatemala": ["Guatemala", "América Latina y el Caribe"], "República Dominicana": ["Dominican Rep.", "América Latina y el Caribe"], "Uruguay": ["Uruguay", "América Latina y el Caribe"], "Costa Rica": ["Costa Rica", "América Latina y el Caribe"], "El Salvador": ["El Salvador", "América Latina y el Caribe"], "Ecuador": ["Ecuador", "América Latina y el Caribe"], "Paraguay": ["Paraguay", "América Latina y el Caribe"], "Panamá": ["Panama", "América Latina y el Caribe"], "Bolivia": ["Bolivia", "América Latina y el Caribe"], "Nicaragua": ["Nicaragua", "América Latina y el Caribe"], "Bahamas": ["Bahamas", "América Latina y el Caribe"], "Puerto Rico": ["Puerto Rico", "América Latina y el Caribe"], "Honduras": ["Honduras", "América Latina y el Caribe"], "Barbados": ["Barbados", "América Latina y el Caribe"], "Curazao": ["Curaçao", "América Latina y el Caribe"], "Guyana": ["Guyana", "América Latina y el Caribe"], "Montserrat": ["Montserrat", "América Latina y el Caribe"], "Trinidad y Tobago": ["Trinidad and Tobago", "América Latina y el Caribe"], "Sudáfrica": ["South Africa", "África subsahariana"], "Nigeria": ["Nigeria", "África subsahariana"], "Ghana": ["Ghana", "África subsahariana"], "Kenia": ["Kenya", "África subsahariana"], "Etiopía": ["Ethiopia", "África subsahariana"], "Malaui": ["Malawi", "África subsahariana"], "Tanzania": ["Tanzania", "África subsahariana"], "Mali": ["Mali", "África subsahariana"], "Malí": ["Mali", "África subsahariana"], "Camerún": ["Cameroon", "África subsahariana"], "Botsuana": ["Botswana", "África subsahariana"], "Uganda": ["Uganda", "África subsahariana"], "Marruecos": ["Morocco", "Norte de África y Asia occidental"], "Argelia": ["Algeria", "Norte de África y Asia occidental"], "Egipto": ["Egypt", "Norte de África y Asia occidental"], "Turquía": ["Turkey", "Norte de África y Asia occidental"], "Israel": ["Israel", "Norte de África y Asia occidental"], "Líbano": ["Lebanon", "Norte de África y Asia occidental"], "Irak": ["Iraq", "Norte de África y Asia occidental"], "Georgia": ["Georgia", "Norte de África y Asia occidental"], "Palestina": ["Palestine", "Norte de África y Asia occidental"], "Jordania": ["Jordan", "Norte de África y Asia occidental"], "Siria": ["Syria", "Norte de África y Asia occidental"], "Arabia Saudí": ["Saudi Arabia", "Norte de África y Asia occidental"], "Emiratos Árabes Unidos": ["United Arab Emirates", "Norte de África y Asia occidental"], "India": ["India", "Asia central y meridional"], "Pakistán": ["Pakistan", "Asia central y meridional"], "Irán": ["Iran", "Asia central y meridional"], "Afganistán": ["Afghanistan", "Asia central y meridional"], "Bangladés": ["Bangladesh", "Asia central y meridional"], "Tayikistán": ["Tajikistan", "Asia central y meridional"], "República Popular China": ["China", "Asia oriental"], "Japón": ["Japan", "Asia oriental"], "Corea del Sur": ["South Korea", "Asia oriental"], "Taiwán": ["Taiwan", "Asia oriental"], "Hong Kong": ["Hong Kong", "Asia oriental"], "Tailandia": ["Thailand", "Sudeste asiático"], "Indonesia": ["Indonesia", "Sudeste asiático"], "Filipinas": ["Philippines", "Sudeste asiático"], "Vietnam": ["Vietnam", "Sudeste asiático"], "Singapur": ["Singapore", "Sudeste asiático"], "Laos": ["Laos", "Sudeste asiático"], "Malasia": ["Malaysia", "Sudeste asiático"], "Australia": ["Australia", "Oceanía"], "Nueva Zelanda": ["New Zealand", "Oceanía"], "Vanuatu": ["Vanuatu", "Oceanía"]};           // nombre es -> [nombre en world-atlas, región]
+const ALIAS_PAIS = {'EE.UU.':'Estados Unidos','Reino de Escocia':'Reino Unido','Malí':'Mali'};
+const REGIONES = ["Norteamérica", "América Latina y el Caribe", "Europa occidental y del norte", "Europa del sur", "Europa del este", "África subsahariana", "Norte de África y Asia occidental", "Asia central y meridional", "Asia oriental", "Sudeste asiático", "Oceanía"];       // orden fijo de regiones
+const COLOR_REGION = Object.fromEntries(REGIONES.map((r, i) => [r,
+  ['#4e79a7','#e15759','#59a14f','#b07aa1','#499894','#f28e2b','#e5c13a','#9c755f','#7a4fa3','#d37295','#b6992d'][i]]));
+const FUENTES = ['Vitamin','Cream','Latin American Artists','Turner Prize','Prix Marcel Duchamp','ARTnews 100','Hugo Boss Prize','Frieze 25','NYT T 25'];
+
+function parseCSV(txt){
+  txt = txt.replace(/^﻿/, '');
+  const filas = []; let fila = [], campo = '', q = false;
+  for (let i = 0; i < txt.length; i++){
+    const c = txt[i];
+    if (q){ if (c === '"'){ if (txt[i+1] === '"'){ campo += '"'; i++; } else q = false; } else campo += c; }
+    else if (c === '"') q = true;
+    else if (c === ','){ fila.push(campo); campo = ''; }
+    else if (c === '\n' || c === '\r'){
+      if (c === '\r' && txt[i+1] === '\n') i++;
+      fila.push(campo); campo = '';
+      if (fila.some(v => v !== '')) filas.push(fila);
+      fila = [];
+    } else campo += c;
+  }
+  if (campo !== '' || fila.length){ fila.push(campo); if (fila.some(v => v !== '')) filas.push(fila); }
+  const cab = filas.shift().map(h => h.trim());
+  return filas.map(f => Object.fromEntries(cab.map((h, i) => [h, (f[i] || '').trim()])));
+}
+const lista = (s, sep) => (s || '').split(sep).map(x => x.trim()).filter(Boolean);
+const normPais = p => { p = ALIAS_PAIS[p] || p; return PAISES[p] ? p : null; };
+// País de nacimiento: si Wikidata dio dos («Puerto Rico / EE.UU.»), se usa el primero.
+const paisNac = r => normPais(lista(r.pais_nacimiento, '/')[0] || '');
+const paisesRes = r => [...new Set(lista(r.pais_residencia, ';').map(normPais).filter(Boolean))];
+const region = p => p && PAISES[p] ? PAISES[p][1] : null;
+const fuentesDe = r => lista(r.fuentes, '|');
+const fmt = n => n.toLocaleString('es-PE');
+const esc = s => String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const enlaceTabla = nombre => `index.html?q=${encodeURIComponent(nombre)}`;
+
+function cargarCSV(){
+  return fetch('artistas.csv').then(r => { if (!r.ok) throw new Error('No se pudo leer artistas.csv'); return r.text(); }).then(parseCSV);
+}
+function selectorFuentes(sel){
+  sel.innerHTML = '<option value="">Todas las fuentes</option>' + FUENTES.map(f => `<option>${f}</option>`).join('');
+}
+function segmentado(cont, alCambiar){
+  cont.addEventListener('click', e => {
+    const b = e.target.closest('button'); if (!b) return;
+    cont.querySelectorAll('button').forEach(x => x.setAttribute('aria-pressed', x === b));
+    alCambiar(b.dataset.v);
+  });
+}
+const valorSeg = cont => cont.querySelector('[aria-pressed=true]').dataset.v;
+
+// Panel lateral con la lista de artistas
+function abrirLista(titulo, meta, secciones){
+  const a = $('aside.lista');
+  a.innerHTML = `<button class="cerrar" type="button" aria-label="Cerrar">×</button><h3>${esc(titulo)}</h3><div class="meta">${meta}</div>` +
+    secciones.filter(s => s.items.length).map(s => `<h4>${esc(s.titulo)} · ${s.items.length}</h4><ul>` +
+      s.items.map(it => `<li><a href="${enlaceTabla(it.nombre)}" target="_blank">${esc(it.nombre)}</a><span class="det">${esc(it.det || '')}</span></li>`).join('') + '</ul>').join('');
+  a.classList.add('abierta');
+  a.scrollTop = 0;
+  a.querySelector('.cerrar').onclick = cerrarLista;
+}
+function cerrarLista(){ $('aside.lista').classList.remove('abierta'); if (window.alCerrarLista) window.alCerrarLista(); }
+document.addEventListener('keydown', e => { if (e.key === 'Escape') cerrarLista(); });
+
+const tip = document.createElement('div'); tip.className = 'tip'; document.body.appendChild(tip);
+function mostrarTip(html, ev){
+  tip.innerHTML = html; tip.style.display = 'block';
+  const w = tip.offsetWidth, h = tip.offsetHeight;
+  let x = ev.clientX + 14, y = ev.clientY + 14;
+  if (x + w > innerWidth - 8) x = ev.clientX - w - 14;
+  if (y + h > innerHeight - 8) y = ev.clientY - h - 14;
+  tip.style.left = x + 'px'; tip.style.top = y + 'px';
+}
+const ocultarTip = () => { tip.style.display = 'none'; };
+
+// ---------- temas ----------
+const UMBRAL = 15;
+let A = [], ordenCol = null, celdaSel = null;
+selectorFuentes($('#fuente'));
+segmentado($('#dim'), () => { ordenCol = null; $('#fuente').disabled = valorSeg($('#dim')) === 'fuente'; dibujar(); });
+segmentado($('#medida'), () => dibujar());
+$('#fuente').onchange = () => { ordenCol = null; dibujar(); };
+window.alCerrarLista = () => { celdaSel = null; document.querySelectorAll('td.sel').forEach(td => td.classList.remove('sel')); };
+
+cargarCSV().then(rows => {
+  A = rows.map(r => {
+    const nac = parseInt(r.nacimiento, 10);
+    return {nombre:r.artista, r, temas:lista(r.temas, ','), medios:lista(r.medios, ','), f:fuentesDe(r),
+            pais:paisNac(r), dec:isFinite(nac) ? Math.floor(nac / 10) * 10 : null};
+  });
+  dibujar();
+}).catch(e => { $('#lienzo').innerHTML = `<div class="cargando">${esc(e.message)}</div>`; });
+
+const etiquetaDec = d => `${d}–${String(d + 9).slice(2)}`;
+function columnasDe(dim, base){
+  if (dim === 'medio'){
+    const c = d3.rollup(base.flatMap(a => a.medios), v => v.length, d => d);
+    return [...c].sort((a, b) => b[1] - a[1]).map(d => ({id:d[0], nombre:d[0], tiene:a => a.medios.includes(d[0])}));
+  }
+  if (dim === 'decada'){
+    return [...new Set(base.map(a => a.dec).filter(d => d !== null))].sort().map(d => ({id:d, nombre:etiquetaDec(d), tiene:a => a.dec === d}));
+  }
+  if (dim === 'region'){
+    return REGIONES.filter(rg => base.some(a => region(a.pais) === rg)).map(rg => ({id:rg, nombre:rg, tiene:a => region(a.pais) === rg}));
+  }
+  return FUENTES.filter(f => base.some(a => a.f.includes(f))).map(f => ({id:f, nombre:f, tiene:a => a.f.includes(f)}));
+}
+
+let M = null;
+function dibujar(){
+  if (!A.length) return;
+  const dim = valorSeg($('#dim')), medida = valorSeg($('#medida')), fuente = dim === 'fuente' ? '' : $('#fuente').value;
+  const todos = A.filter(a => !fuente || a.f.includes(fuente));
+  const conT = todos.filter(a => a.temas.length), N = conT.length;
+  const temas = [...d3.rollup(conT.flatMap(a => a.temas), v => v.length, d => d)].sort((a, b) => b[1] - a[1]);
+  const cols = columnasDe(dim, todos).filter(c => { c.total = todos.filter(c.tiene).length; c.arts = conT.filter(c.tiene); c.n = c.arts.length; c.poca = c.n < UMBRAL; return c.n > 0; });
+  const tasaBase = new Map(temas.map(([t, n]) => [t, n / N]));
+  const celda = (t, c) => {
+    const arts = c.arts.filter(a => a.temas.includes(t)), n = arts.length;
+    const pct = c.n ? n / c.n : NaN, idx = c.n ? pct / tasaBase.get(t) : NaN;
+    return {t, c, arts, n, pct, idx};
+  };
+  const filas = temas.map(([t, tot]) => ({t, tot, celdas:cols.map(c => celda(t, c))}));
+  if (ordenCol !== null){
+    const i = cols.findIndex(c => c.id === ordenCol);
+    if (i >= 0) filas.sort((a, b) => (valor(b.celdas[i], medida) || 0) - (valor(a.celdas[i], medida) || 0));
+  }
+  M = {cols, filas, N, medida};
+
+  // escalas de color
+  const visibles = filas.flatMap(f => f.celdas).filter(x => !x.c.poca);
+  const maxV = d3.max(visibles, x => valor(x, medida)) || 1;
+  const colorDe = x => {
+    const v = valor(x, medida);
+    if (!isFinite(v)) return '#fff';
+    if (medida === 'indice'){
+      const l = Math.max(-2, Math.min(2, Math.log2(Math.max(v, .25))));
+      return d3.interpolateRdBu(.5 - l / 4 * .9);
+    }
+    return d3.interpolateRgb('#ffffff', '#a8432f')(Math.pow(v / maxV, .7));
+  };
+  const textoDe = x => {
+    if (!x.c.n) return '';
+    if (medida === 'n') return x.n || '';
+    if (medida === 'pct') return x.n ? Math.round(100 * x.pct) : '·';
+    return x.n ? x.idx.toFixed(1).replace('.', ',') : '0';
+  };
+  const oscuro = c => { const k = d3.lab(c).l; return k < 58; };
+
+  $('#escala').innerHTML = medida === 'indice'
+    ? `<span>0,25×</span><span class="barra" style="background:linear-gradient(90deg,${[0, .25, .5, .75, 1].map(t => d3.interpolateRdBu(.95 - t * .9)).join(',')})"></span><span>4×</span>`
+    : `<span>0</span><span class="barra" style="background:linear-gradient(90deg,#fff,#a8432f)"></span><span>${medida === 'pct' ? Math.round(100 * maxV) + ' %' : maxV}</span>`;
+  const cob = Math.round(100 * N / todos.length);
+  $('#resumen').innerHTML = `Temas para <b>${fmt(N)}</b> de <b>${fmt(todos.length)}</b> artistas (${cob} %) · <b>${temas.length}</b> temas`;
+
+  const tit = {medio:'Medio', decada:'Década de nacimiento', region:'Región de nacimiento', fuente:'Fuente'}[dim];
+  let h = `${cob < 70 ? `<div class="aviso">Solo el ${cob} % de ${fuente ? 'esta selección' : 'la base'} tiene temas asignados. Lee los patrones como provisionales hasta completar la cobertura.</div>` : ''}<table><thead>
+    <tr class="cols"><th class="esq">Tema · ${tit}</th>${cols.map(c => `<th class="col${c.poca ? ' poca' : ''}${c.id === ordenCol ? ' orden' : ''}" data-col="${esc(c.id)}" title="${esc(c.nombre)}${c.poca ? ' · menos de ' + UMBRAL + ' artistas con temas' : ''} · clic para ordenar"><div>${esc(c.nombre)}</div></th>`).join('')}<th class="col tot"><div>Toda la base</div></th></tr>
+    <tr class="n"><th>Artistas con temas</th>${cols.map(c => `<td>${c.n}</td>`).join('')}<td>${N}</td></tr>
+    <tr class="cob"><th>Cobertura</th>${cols.map(c => `<td title="${c.n} de ${c.total}">${c.total ? Math.round(100 * c.n / c.total) : 0} %</td>`).join('')}<td>${cob} %</td></tr>
+  </thead><tbody>`;
+  filas.forEach((f, i) => {
+    h += `<tr><th data-tema="${esc(f.t)}">${esc(f.t)}<span class="t">${f.tot}</span></th>` +
+      f.celdas.map((x, j) => { const bg = colorDe(x); return `<td data-i="${i}" data-j="${j}" class="${x.c.poca ? 'poca' : ''}" style="background:${bg};color:${oscuro(bg) ? '#fff' : 'var(--ink)'}">${textoDe(x)}</td>`; }).join('') +
+      `<td class="tot">${medida === 'n' ? f.tot : medida === 'pct' ? Math.round(100 * f.tot / N) : '1,0'}</td></tr>`;
+  });
+  h += '</tbody></table>';
+  const sc = $('#lienzo').scrollLeft;
+  $('#lienzo').innerHTML = h;
+  $('#lienzo').scrollLeft = sc;
+
+  $('#lienzo').querySelectorAll('th.col[data-col]').forEach(th => th.onclick = () => {
+    const id = cols.find(c => String(c.id) === th.dataset.col).id;
+    ordenCol = ordenCol === id ? null : id; dibujar();
+  });
+  $('#lienzo').querySelectorAll('tbody td[data-i]').forEach(td => {
+    const x = () => M.filas[td.dataset.i].celdas[td.dataset.j];
+    td.onmousemove = e => mostrarTip(tipCelda(x()), e);
+    td.onmouseleave = ocultarTip;
+    td.onclick = () => { document.querySelectorAll('td.sel').forEach(t => t.classList.remove('sel')); td.classList.add('sel'); listaCelda(x()); };
+  });
+  $('#lienzo').querySelectorAll('tbody th[data-tema]').forEach(th => th.onclick = () => listaTema(th.dataset.tema, conT));
+}
+
+function valor(x, medida){ return medida === 'n' ? x.n : medida === 'pct' ? x.pct : x.idx; }
+const pctTxt = v => isFinite(v) ? Math.round(100 * v) + ' %' : '—';
+function tipCelda(x){
+  return `<b>${esc(x.t)}</b> · ${esc(x.c.nombre)}<br>${x.n} de ${x.c.n} artistas (${pctTxt(x.pct)})` +
+    `<br>Índice ${isFinite(x.idx) ? x.idx.toFixed(2).replace('.', ',') + '×' : '—'} (${pctTxt(M.filas.find(f => f.t === x.t).tot / M.N)} en toda la base)` +
+    (x.c.poca ? '<br><i>Columna con pocos casos</i>' : '');
+}
+const detArt = a => [a.r.nacimiento, a.pais].filter(Boolean).join(' · ');
+function listaCelda(x){
+  const arts = [...x.arts].sort((a, b) => a.nombre.localeCompare(b.nombre, 'es'));
+  abrirLista(`${x.t} · ${x.c.nombre}`,
+    `${x.n} de ${x.c.n} artistas con temas en esta columna (${pctTxt(x.pct)}); índice ${isFinite(x.idx) ? x.idx.toFixed(2).replace('.', ',') + '×' : '—'}.<br>Clic en un nombre abre su ficha en la tabla.`,
+    [{titulo:'Artistas', items:arts.map(a => ({nombre:a.nombre, det:detArt(a)}))}]);
+}
+function listaTema(t, conT){
+  const arts = conT.filter(a => a.temas.includes(t)).sort((a, b) => a.nombre.localeCompare(b.nombre, 'es'));
+  abrirLista(t, `${arts.length} artistas trabajan este tema.<br>Clic en un nombre abre su ficha en la tabla.`,
+    [{titulo:'Artistas', items:arts.map(a => ({nombre:a.nombre, det:detArt(a)}))}]);
+}
+</script>
+</body>
+</html>
